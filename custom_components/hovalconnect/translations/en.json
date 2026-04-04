@@ -4,34 +4,20 @@
       "user": {
         "title": "Hoval Connect",
         "description": "Enter tokens from the Setup Tool.",
-        "data": {
-          "access_token": "Access Token",
-          "refresh_token": "Refresh Token"
-        }
+        "data": {"access_token": "Access Token", "refresh_token": "Refresh Token"}
       },
       "plant": {
         "title": "Select Plant",
-        "data": {
-          "plant_id": "Plant"
-        }
+        "data": {"plant_id": "Plant"}
       },
       "reauth_confirm": {
         "title": "Hoval Connect – Re-authenticate",
         "description": "Tokens expired. Run the Setup Tool to get new tokens.",
-        "data": {
-          "access_token": "Access Token",
-          "refresh_token": "Refresh Token"
-        }
+        "data": {"access_token": "Access Token", "refresh_token": "Refresh Token"}
       }
     },
-    "error": {
-      "cannot_connect": "Connection failed – token invalid or expired."
-    },
-    "abort": {
-      "no_plants": "No plants found.",
-      "already_configured": "Already configured.",
-      "reauth_successful": "Re-authentication successful."
-    }
+    "error": {"cannot_connect": "Connection failed – token invalid or expired."},
+    "abort": {"no_plants": "No plants found.", "already_configured": "Already configured.", "reauth_successful": "Re-authentication successful."}
   },
   "entity": {
     "sensor": {
@@ -40,7 +26,6 @@
       "hk_circuit_temp_actual":   {"name": "Heating Circuit Temperature"},
       "hk_circuit_temp_target":   {"name": "Heating Circuit Target Temperature"},
       "ww_circuit_temp_actual":   {"name": "Hot Water Temperature"},
-      "ww_circuit_temp_target":   {"name": "Hot Water Target Temperature"},
       "flow_temp_actual":         {"name": "Flow Temperature"},
       "flow_temp_target":         {"name": "Flow Temperature Target"},
       "room_temp_actual":         {"name": "Room Temperature"},

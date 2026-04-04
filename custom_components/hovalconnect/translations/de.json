@@ -4,34 +4,20 @@
       "user": {
         "title": "Hoval Connect",
         "description": "Tokens aus dem Setup Tool einfügen.",
-        "data": {
-          "access_token": "Access Token",
-          "refresh_token": "Refresh Token"
-        }
+        "data": {"access_token": "Access Token", "refresh_token": "Refresh Token"}
       },
       "plant": {
         "title": "Anlage auswählen",
-        "data": {
-          "plant_id": "Anlage"
-        }
+        "data": {"plant_id": "Anlage"}
       },
       "reauth_confirm": {
         "title": "Hoval Connect – Neu anmelden",
         "description": "Tokens abgelaufen. Setup Tool erneut ausführen.",
-        "data": {
-          "access_token": "Access Token",
-          "refresh_token": "Refresh Token"
-        }
+        "data": {"access_token": "Access Token", "refresh_token": "Refresh Token"}
       }
     },
-    "error": {
-      "cannot_connect": "Verbindung fehlgeschlagen – Token ungültig oder abgelaufen."
-    },
-    "abort": {
-      "no_plants": "Keine Anlagen gefunden.",
-      "already_configured": "Bereits konfiguriert.",
-      "reauth_successful": "Erfolgreich neu authentifiziert."
-    }
+    "error": {"cannot_connect": "Verbindung fehlgeschlagen – Token ungültig oder abgelaufen."},
+    "abort": {"no_plants": "Keine Anlagen gefunden.", "already_configured": "Bereits konfiguriert.", "reauth_successful": "Erfolgreich neu authentifiziert."}
   },
   "entity": {
     "sensor": {
@@ -40,7 +26,6 @@
       "hk_circuit_temp_actual":   {"name": "Heizkreis Temperatur"},
       "hk_circuit_temp_target":   {"name": "Heizkreis Solltemperatur"},
       "ww_circuit_temp_actual":   {"name": "Warmwasser Temperatur"},
-      "ww_circuit_temp_target":   {"name": "Warmwasser Solltemperatur"},
       "flow_temp_actual":         {"name": "Vorlauf Ist"},
       "flow_temp_target":         {"name": "Vorlauf Soll"},
       "room_temp_actual":         {"name": "Raumtemperatur Ist"},
