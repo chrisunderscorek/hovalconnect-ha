@@ -5,7 +5,7 @@ from homeassistant.const import UnitOfTemperature
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, MANUFACTURER
 
-# Live-Value Sensor Definitionen pro Circuit-Typ
+# Live value sensor definitions per circuit type
 # Format: (key, translation_key, unit, device_class, state_class)
 LIVE_SENSORS = {
     "HK": [
@@ -30,7 +30,7 @@ LIVE_SENSORS = {
     ],
 }
 
-# Circuit temp sensor translation keys
+# Circuit temperature sensor translation keys
 CIRCUIT_TEMP_KEYS = {
     "actualValue": "circuit_temp_actual",
     "targetValue": "circuit_temp_target",
@@ -46,21 +46,22 @@ async def async_setup_entry(hass, entry, async_add_entities):
         path = c["path"]
         ctype = c.get("type", "")
 
-        # Circuit status sensor
+        # Status sensor
         if c.get("circuitStatus") is not None:
             entities.append(HovalStatusSensor(coordinator, plant_id, path, ctype))
 
-        # Active program sensor
+        # Program sensor
         if c.get("activeProgram") is not None:
             entities.append(HovalProgramSensor(coordinator, plant_id, path, ctype))
 
-        # Circuit temp sensors (actualValue / targetValue)
+        # Temperature sensors from circuit data
         if c.get("actualValue") is not None:
             entities.append(HovalCircuitTempSensor(coordinator, plant_id, path, ctype, "actualValue"))
-        if c.get("selectable") and c.get("targetValue") is not None:
+        # Hot water: skip targetValue here – already provided by live values
+        if c.get("selectable") and c.get("targetValue") is not None and ctype != "WW":
             entities.append(HovalCircuitTempSensor(coordinator, plant_id, path, ctype, "targetValue"))
 
-        # Live value sensors
+        # Live value sensors (modulation, temperatures, operating hours etc.)
         for key, translation_key, unit, dev_class, state_class in LIVE_SENSORS.get(ctype, []):
             entities.append(HovalLiveSensor(
                 coordinator, plant_id, path, ctype,

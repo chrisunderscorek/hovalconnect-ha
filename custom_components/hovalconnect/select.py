@@ -8,10 +8,10 @@ from .const import DOMAIN, MANUFACTURER
 _LOGGER = logging.getLogger(__name__)
 
 PROGRAMS = {
-    "week1":    "Wochenprogramm 1",
-    "week2":    "Wochenprogramm 2",
-    "constant": "Konstant",
-    "ecoMode":  "Eco-Modus",
+    "week1":    "Weekly Program 1",
+    "week2":    "Weekly Program 2",
+    "constant": "Constant",
+    "ecoMode":  "Eco Mode",
 }
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -31,8 +31,8 @@ class HovalProgramSelect(CoordinatorEntity, SelectEntity):
         self._api = api
         self._plant_id = plant_id
         self._path = circuit["path"]
-        name = circuit.get("name") or "Heizkreis"
-        self._attr_name = f"Hoval {name} Programm"
+        name = circuit.get("name") or "Heating Circuit"
+        self._attr_name = f"Hoval {name} Program"
         self._attr_unique_id = f"hoval_{plant_id}_{self._path}_program"
 
     def _c(self):

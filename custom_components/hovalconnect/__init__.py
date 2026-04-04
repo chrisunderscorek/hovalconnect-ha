@@ -20,15 +20,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         access_token=entry.data["access_token"],
         refresh_token=entry.data["refresh_token"],
     )
-    # Nach Neustart Access Token sofort als abgelaufen markieren
-    # → erster Update-Zyklus holt frischen Token via Refresh Token
+    # Mark access token as expired on startup
+    # → first update cycle will fetch a fresh token via refresh token
     api._expires_at = 0.0
     plant_id = entry.data[CONF_PLANT_ID]
 
     async def _update():
         try:
             circuits = await api.get_circuits(plant_id)
-            # Fetch live values for each circuit
+            # Fetch live sensor values for each circuit
             live_values = {}
             for c in circuits:
                 path = c.get("path", "")
@@ -50,7 +50,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         except (HovalAPIError, Exception) as err:
             raise UpdateFailed(str(err)) from err
 
-    # Save new tokens to config entry whenever they are refreshed
+    # Save refreshed tokens back to config entry for persistence
     def _save_tokens(access_token: str, refresh_token: str) -> None:
         new_data = {**entry.data, "access_token": access_token, "refresh_token": refresh_token}
         hass.config_entries.async_update_entry(entry, data=new_data)

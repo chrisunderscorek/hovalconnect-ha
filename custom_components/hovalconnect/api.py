@@ -30,7 +30,7 @@ class HovalConnectAPI:
         self._plant_token: str | None = None
         self._plant_token_expires: float = 0.0
         self._on_token_refresh = None  # callback(access_token, refresh_token)
-        # Proaktiv alle 20 min erneuern (nicht erst wenn abgelaufen)
+        # Proactively refresh every 20 minutes (nicht erst wenn abgelaufen)
         self._proactive_refresh_interval: float = 20 * 60
 
     def set_token_refresh_callback(self, callback) -> None:
@@ -38,7 +38,7 @@ class HovalConnectAPI:
         self._on_token_refresh = callback
 
     async def _ensure_access_token(self) -> None:
-        # Proaktiv erneuern wenn weniger als 20 min verbleiben
+        # Proactively refresh when less than 20 minutes remain
         proactive_threshold = self._expires_at - self._proactive_refresh_interval
         if time.monotonic() < proactive_threshold:
             return
@@ -111,7 +111,7 @@ class HovalConnectAPI:
         return {item["key"]: item["value"] for item in data if "key" in item}
 
     async def set_temporary_change(self, plant_id: str, path: str, value: float, duration: str = "fourHours") -> None:
-        """Temporäre Temperaturänderung (Wochenprogramm läuft weiter)."""
+        """Temporary temperature change (weekly program continues)."""
         h = await self._h(plant_id)
         async with self._session.post(
             API_TEMP_CHANGE.format(plant_id=plant_id, path=path),
@@ -131,7 +131,7 @@ class HovalConnectAPI:
             resp.raise_for_status()
 
     async def set_program(self, plant_id: str, path: str, program: str) -> None:
-        """Programm wechseln: week1, week2, constant."""
+        """Switch program: week1, week2, constant."""
         h = await self._h(plant_id)
         async with self._session.post(
             API_SET_PROGRAM.format(plant_id=plant_id, path=path, program=program),

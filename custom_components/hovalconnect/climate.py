@@ -11,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 STATUS_TO_ACTION = {
     "heating":  HVACAction.HEATING,
     "cooling":  HVACAction.COOLING,
-    "charging": HVACAction.HEATING,  # Warmwasser lädt
+    "charging": HVACAction.HEATING,  # Hot water charging
     "off":      HVACAction.IDLE,
     None:       HVACAction.IDLE,
 }
@@ -73,10 +73,10 @@ class HovalCircuitClimate(CoordinatorEntity, ClimateEntity):
         if temp is None:
             return
         if self._circuit_type == "WW":
-            # Warmwasser: immer dauerhaft
+            # Hot water: always permanent
             await self._api.set_constant_temp(self._plant_id, self._path, temp)
         else:
-            # Heizkreis: abhängig vom aktiven Programm
+            # Heating circuit: depends on active program
             active_program = self._c().get("activeProgram", "week1")
             if active_program == "constant":
                 await self._api.set_constant_temp(self._plant_id, self._path, temp)

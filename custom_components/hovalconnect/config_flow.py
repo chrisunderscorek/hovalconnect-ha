@@ -9,6 +9,7 @@ from .const import CONF_PLANT_ID, DOMAIN, MANUFACTURER
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class HovalConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
@@ -27,7 +28,10 @@ class HovalConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
             try:
                 self._plants = await api.get_plants()
-                self._tokens = {"access_token": user_input["access_token"].strip(), "refresh_token": user_input["refresh_token"].strip()}
+                self._tokens = {
+                    "access_token": user_input["access_token"].strip(),
+                    "refresh_token": user_input["refresh_token"].strip(),
+                }
             except Exception as err:
                 _LOGGER.error("Setup error: %s", err)
                 errors["base"] = "cannot_connect"
@@ -39,12 +43,18 @@ class HovalConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({vol.Required("access_token"): str, vol.Required("refresh_token"): str}),
+            data_schema=vol.Schema({
+                vol.Required("access_token"): str,
+                vol.Required("refresh_token"): str,
+            }),
             errors=errors,
         )
 
     async def async_step_plant(self, user_input=None):
-        options = {p.get("plantExternalId", str(i)): p.get("description", f"Plant {i+1}") for i, p in enumerate(self._plants)}
+        options = {
+            p.get("plantExternalId", str(i)): p.get("description", f"Plant {i+1}")
+            for i, p in enumerate(self._plants)
+        }
         if user_input is not None:
             plant_id = user_input[CONF_PLANT_ID]
             await self.async_set_unique_id(f"hoval_{plant_id}")
@@ -58,11 +68,7 @@ class HovalConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({vol.Required(CONF_PLANT_ID): vol.In(options)}),
         )
 
-
-class HovalConnectReauthFlow(config_entries.ConfigEntryBaseFlow):
-    """Re-authentication flow — shown when refresh token expires."""
-
-    async def async_step_reauth(self, user_input=None):
+    async def async_step_reauth(self, entry_data=None):
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(self, user_input=None):
@@ -76,16 +82,16 @@ class HovalConnectReauthFlow(config_entries.ConfigEntryBaseFlow):
             )
             try:
                 await api.get_plants()
-                # Update existing entry with new tokens
+                reauth_entry = self._get_reauth_entry()
                 self.hass.config_entries.async_update_entry(
-                    self._get_reauth_entry(),
+                    reauth_entry,
                     data={
-                        **self._get_reauth_entry().data,
+                        **reauth_entry.data,
                         "access_token": user_input["access_token"].strip(),
                         "refresh_token": user_input["refresh_token"].strip(),
                     },
                 )
-                await self.hass.config_entries.async_reload(self._get_reauth_entry().entry_id)
+                await self.hass.config_entries.async_reload(reauth_entry.entry_id)
                 return self.async_abort(reason="reauth_successful")
             except Exception as err:
                 _LOGGER.error("Reauth error: %s", err)
