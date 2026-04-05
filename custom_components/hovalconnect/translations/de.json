@@ -4,42 +4,103 @@
       "user": {
         "title": "Hoval Connect",
         "description": "Tokens aus dem Setup Tool einfügen.",
-        "data": {"access_token": "Access Token", "refresh_token": "Refresh Token"}
+        "data": {
+          "access_token": "Access Token",
+          "refresh_token": "Refresh Token"
+        }
       },
       "plant": {
         "title": "Anlage auswählen",
-        "data": {"plant_id": "Anlage"}
+        "data": {
+          "plant_id": "Anlage"
+        }
       },
       "reauth_confirm": {
         "title": "Hoval Connect – Neu anmelden",
         "description": "Tokens abgelaufen. Setup Tool erneut ausführen.",
-        "data": {"access_token": "Access Token", "refresh_token": "Refresh Token"}
+        "data": {
+          "access_token": "Access Token",
+          "refresh_token": "Refresh Token"
+        }
       }
     },
-    "error": {"cannot_connect": "Verbindung fehlgeschlagen – Token ungültig oder abgelaufen."},
-    "abort": {"no_plants": "Keine Anlagen gefunden.", "already_configured": "Bereits konfiguriert.", "reauth_successful": "Erfolgreich neu authentifiziert."}
+    "error": {
+      "cannot_connect": "Verbindung fehlgeschlagen – Token ungültig oder abgelaufen."
+    },
+    "abort": {
+      "no_plants": "Keine Anlagen gefunden.",
+      "already_configured": "Bereits konfiguriert.",
+      "reauth_successful": "Erfolgreich neu authentifiziert."
+    }
   },
   "entity": {
     "sensor": {
-      "circuit_status":           {"name": "Status"},
-      "active_program":           {"name": "Aktives Programm"},
-      "hk_circuit_temp_actual":   {"name": "Heizkreis Temperatur"},
-      "hk_circuit_temp_target":   {"name": "Heizkreis Solltemperatur"},
-      "ww_circuit_temp_actual":   {"name": "Warmwasser Temperatur"},
-      "flow_temp_actual":         {"name": "Vorlauf Ist"},
-      "flow_temp_target":         {"name": "Vorlauf Soll"},
-      "room_temp_actual":         {"name": "Raumtemperatur Ist"},
-      "room_temp_target":         {"name": "Raumtemperatur Soll"},
-      "outside_temperature":      {"name": "Außentemperatur"},
-      "generator_temp_actual":    {"name": "Wärmeerzeuger Vorlauf Ist"},
-      "generator_temp_target":    {"name": "Wärmeerzeuger Vorlauf Soll"},
-      "modulation":               {"name": "Modulation"},
-      "operating_hours":          {"name": "Betriebsstunden"},
-      "operation_cycles":         {"name": "Schaltzyklen"},
-      "operating_hours_over_50":  {"name": "Betriebsstunden über 50%"},
-      "error_code":               {"name": "Fehlercode"},
-      "storage_temp_actual":      {"name": "Speichertemperatur"},
-      "hot_water_temp_target":    {"name": "Warmwasser Solltemperatur"}
+      "hk_circuit_temp_actual": {
+        "name": "Heizkreis Temperatur"
+      },
+      "hk_circuit_temp_target": {
+        "name": "Heizkreis Solltemperatur"
+      },
+      "ww_circuit_temp_actual": {
+        "name": "Warmwasser Temperatur"
+      },
+      "flow_temp_actual": {
+        "name": "Vorlauf Ist"
+      },
+      "flow_temp_target": {
+        "name": "Vorlauf Soll"
+      },
+      "room_temp_actual": {
+        "name": "Raumtemperatur Ist"
+      },
+      "room_temp_target": {
+        "name": "Raumtemperatur Soll"
+      },
+      "outside_temperature": {
+        "name": "Außentemperatur"
+      },
+      "generator_temp_actual": {
+        "name": "Wärmeerzeuger Vorlauf Ist"
+      },
+      "generator_temp_target": {
+        "name": "Wärmeerzeuger Vorlauf Soll"
+      },
+      "modulation": {
+        "name": "Modulation"
+      },
+      "operating_hours": {
+        "name": "Betriebsstunden"
+      },
+      "operation_cycles": {
+        "name": "Schaltzyklen"
+      },
+      "operating_hours_over_50": {
+        "name": "Betriebsstunden über 50%"
+      },
+      "error_code": {
+        "name": "Fehlercode"
+      },
+      "storage_temp_actual": {
+        "name": "Speichertemperatur"
+      },
+      "hot_water_temp_target": {
+        "name": "Warmwasser Solltemperatur"
+      },
+      "hk_status": {
+        "name": "Heizkreis Status"
+      },
+      "ww_status": {
+        "name": "Warmwasser Status"
+      },
+      "bl_status": {
+        "name": "Wärmeerzeuger Status"
+      },
+      "hk_active_program": {
+        "name": "Heizkreis Programm"
+      },
+      "ww_active_program": {
+        "name": "Warmwasser Programm"
+      }
     }
   }
 }
