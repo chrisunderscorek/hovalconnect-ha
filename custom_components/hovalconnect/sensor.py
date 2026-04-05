@@ -133,7 +133,7 @@ class HovalStatusSensor(CoordinatorEntity, SensorEntity):
         self._plant_id = plant_id
         self._path = path
         self._attr_unique_id = f"hoval_{plant_id}_{path}_status"
-        self._attr_translation_key = "circuit_status"
+        self._attr_translation_key = f"{ctype.lower()}_status"
 
     def _c(self):
         for c in self.coordinator.data.get("circuits", []):
@@ -162,7 +162,7 @@ class HovalProgramSensor(CoordinatorEntity, SensorEntity):
         self._plant_id = plant_id
         self._path = path
         self._attr_unique_id = f"hoval_{plant_id}_{path}_active_program"
-        self._attr_translation_key = "active_program"
+        self._attr_translation_key = f"{ctype.lower()}_active_program"
 
     def _c(self):
         for c in self.coordinator.data.get("circuits", []):
