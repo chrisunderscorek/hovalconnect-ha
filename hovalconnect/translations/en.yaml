@@ -1,0 +1,4 @@
+configuration:
+  backup_existing:
+    name: Backup existing integration
+    description: Keep a timestamped copy of the current Hoval Connect integration before installing this version.

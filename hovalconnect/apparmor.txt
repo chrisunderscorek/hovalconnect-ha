@@ -1,0 +1,47 @@
+#include <tunables/global>
+
+profile hovalconnect flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+
+  file,
+  signal,
+
+  # App startup, Bashio, and base image runtime.
+  /init rix,
+  /run.sh rix,
+  /bin/** ix,
+  /usr/bin/** ix,
+  /package/** ix,
+  /command/** ix,
+  /etc/s6/** rix,
+  /run/{,**} rwk,
+  /run/{s6,s6-rc*,service}/** rwix,
+  /etc/services.d/** rwix,
+  /etc/cont-init.d/** rwix,
+  /etc/cont-finish.d/** rwix,
+  /usr/lib/bashio/** ix,
+  /tmp/** rwk,
+  /dev/tty rw,
+  /dev/null rw,
+  /dev/urandom r,
+
+  # Bundled integration files and persisted app data.
+  /app/custom_components/hovalconnect/** r,
+  /data/** rwk,
+
+  # Home Assistant config mount used for installing/updating the integration.
+  /config/ r,
+  /config/custom_components/ rw,
+  /config/custom_components/** rwk,
+
+  # Outbound HTTPS/DNS access is allowed for future installer checks and
+  # matches the integration's cloud-polling network requirement.
+  network inet stream,
+  network inet6 stream,
+  network inet dgram,
+  network inet6 dgram,
+
+  /etc/ssl/** r,
+  /usr/share/ca-certificates/** r,
+}

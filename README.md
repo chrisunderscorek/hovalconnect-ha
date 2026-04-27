@@ -1,6 +1,6 @@
 # Hoval Connect – Home Assistant Integration
 
-[![Version](https://img.shields.io/badge/version-0.0.1-blue)](https://github.com/yourusername/hovalconnect-ha/releases)
+[![Version](https://img.shields.io/badge/version-0.0.2-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -61,9 +61,15 @@ All devices compatible with the **HovalConnect App** (iOS/Android), e.g.:
 1. Copy folder `custom_components/hovalconnect/` to `config/custom_components/hovalconnect/`
 2. Restart Home Assistant
 
+**Via Home Assistant App Repository:**
+1. Settings → Add-ons → Add-on Store → ⋮ → Repositories
+2. URL: `https://github.com/chrisunderscorek/hovalconnect-ha`
+3. Install **Hoval Connect**
+4. Start the app once → Restart Home Assistant Core
+
 **Via HACS (Custom Repository):**
 1. HACS → Integrations → ⋮ → Custom Repositories
-2. URL: `https://github.com/yourusername/hovalconnect-ha`
+2. URL: `https://github.com/chrisunderscorek/hovalconnect-ha`
 3. Category: Integration → Add
 4. Install integration → Restart HA
 

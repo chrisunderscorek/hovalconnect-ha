@@ -1,0 +1,22 @@
+name: Hoval Connect
+version: "0.0.2"
+slug: hovalconnect
+description: Installs the Hoval Connect custom integration into Home Assistant
+url: https://github.com/chrisunderscorek/hovalconnect-ha/tree/main/hovalconnect
+image: ghcr.io/chrisunderscorek/hovalconnect-ha
+arch:
+  - aarch64
+  - amd64
+startup: once
+boot: manual
+init: false
+stage: experimental
+apparmor: hovalconnect
+map:
+  - type: homeassistant_config
+    read_only: false
+    path: /config
+options:
+  backup_existing: true
+schema:
+  backup_existing: bool

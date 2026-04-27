@@ -3,8 +3,8 @@
   "name": "Hoval Connect",
   "version": "0.0.2",
   "config_flow": true,
-  "documentation": "https://github.com/yourusername/hovalconnect-ha",
-  "issue_tracker": "https://github.com/yourusername/hovalconnect-ha/issues",
+  "documentation": "https://github.com/chrisunderscorek/hovalconnect-ha",
+  "issue_tracker": "https://github.com/chrisunderscorek/hovalconnect-ha/issues",
   "requirements": ["aiohttp>=3.8.0"],
   "iot_class": "cloud_polling",
   "codeowners": []

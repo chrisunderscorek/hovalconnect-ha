@@ -1,0 +1,4 @@
+configuration:
+  backup_existing:
+    name: Bestehende Integration sichern
+    description: Erstellt vor der Installation eine datierte Kopie der aktuell installierten Hoval-Connect-Integration.
