@@ -54,6 +54,8 @@ jobs:
           file: hovalconnect/Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
+          provenance: false
+          sbom: false
           build-args: |
             BUILD_VERSION=${{ env.VERSION }}
             BUILD_ARCH=${{ matrix.hass_arch }}
