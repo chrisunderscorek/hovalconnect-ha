@@ -3,11 +3,25 @@ from __future__ import annotations
 import logging
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from .api import HovalConnectAPI
-from .const import CONF_PLANT_ID, DOMAIN, MANUFACTURER
+from .api import HovalAuthError, HovalAPIError, HovalConnectAPI
+from .const import CONF_EMAIL, CONF_PASSWORD, CONF_PLANT_ID, CONF_STORE_PASSWORD, DOMAIN, MANUFACTURER
 
 _LOGGER = logging.getLogger(__name__)
+
+PASSWORD_SELECTOR = selector.TextSelector(
+    selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
+)
+
+
+def _credentials_schema(email: str | None = None, store_password: bool = False) -> vol.Schema:
+    email_field = vol.Required(CONF_EMAIL, default=email) if email else vol.Required(CONF_EMAIL)
+    return vol.Schema({
+        email_field: str,
+        vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR,
+        vol.Optional(CONF_STORE_PASSWORD, default=store_password): bool,
+    })
 
 
 class HovalConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -20,18 +34,30 @@ class HovalConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None):
         errors = {}
         if user_input is not None:
+            email = user_input[CONF_EMAIL].strip()
+            password = user_input[CONF_PASSWORD]
+            store_password = user_input.get(CONF_STORE_PASSWORD, False)
             session = async_get_clientsession(self.hass)
             api = HovalConnectAPI(
                 session=session,
-                access_token=user_input["access_token"].strip(),
-                refresh_token=user_input["refresh_token"].strip(),
+                email=email,
+                password=password,
             )
             try:
                 self._plants = await api.get_plants()
                 self._tokens = {
-                    "access_token": user_input["access_token"].strip(),
-                    "refresh_token": user_input["refresh_token"].strip(),
+                    CONF_STORE_PASSWORD: store_password,
+                    **api.auth_data(),
                 }
+                if store_password:
+                    self._tokens[CONF_EMAIL] = email
+                    self._tokens[CONF_PASSWORD] = password
+            except HovalAuthError as err:
+                _LOGGER.warning("Setup auth error: %s", err)
+                errors["base"] = "invalid_auth"
+            except HovalAPIError as err:
+                _LOGGER.error("Setup API error: %s", err)
+                errors["base"] = "cannot_connect"
             except Exception as err:
                 _LOGGER.error("Setup error: %s", err)
                 errors["base"] = "cannot_connect"
@@ -43,10 +69,7 @@ class HovalConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required("access_token"): str,
-                vol.Required("refresh_token"): str,
-            }),
+            data_schema=_credentials_schema(),
             errors=errors,
         )
 
@@ -74,34 +97,50 @@ class HovalConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_reauth_confirm(self, user_input=None):
         errors = {}
         if user_input is not None:
+            email = user_input[CONF_EMAIL].strip()
+            password = user_input[CONF_PASSWORD]
+            store_password = user_input.get(CONF_STORE_PASSWORD, False)
             session = async_get_clientsession(self.hass)
             api = HovalConnectAPI(
                 session=session,
-                access_token=user_input["access_token"].strip(),
-                refresh_token=user_input["refresh_token"].strip(),
+                email=email,
+                password=password,
             )
             try:
                 await api.get_plants()
                 reauth_entry = self._get_reauth_entry()
+                new_data = {
+                    **reauth_entry.data,
+                    CONF_STORE_PASSWORD: store_password,
+                    **api.auth_data(),
+                }
+                if store_password:
+                    new_data[CONF_EMAIL] = email
+                    new_data[CONF_PASSWORD] = password
+                else:
+                    new_data.pop(CONF_EMAIL, None)
+                    new_data.pop(CONF_PASSWORD, None)
                 self.hass.config_entries.async_update_entry(
                     reauth_entry,
-                    data={
-                        **reauth_entry.data,
-                        "access_token": user_input["access_token"].strip(),
-                        "refresh_token": user_input["refresh_token"].strip(),
-                    },
+                    data=new_data,
                 )
                 await self.hass.config_entries.async_reload(reauth_entry.entry_id)
                 return self.async_abort(reason="reauth_successful")
+            except HovalAuthError as err:
+                _LOGGER.warning("Reauth auth error: %s", err)
+                errors["base"] = "invalid_auth"
+            except HovalAPIError as err:
+                _LOGGER.error("Reauth API error: %s", err)
+                errors["base"] = "cannot_connect"
             except Exception as err:
                 _LOGGER.error("Reauth error: %s", err)
                 errors["base"] = "cannot_connect"
 
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({
-                vol.Required("access_token"): str,
-                vol.Required("refresh_token"): str,
-            }),
+            data_schema=_credentials_schema(
+                email=self._get_reauth_entry().data.get(CONF_EMAIL),
+                store_password=self._get_reauth_entry().data.get(CONF_STORE_PASSWORD, False),
+            ),
             errors=errors,
         )

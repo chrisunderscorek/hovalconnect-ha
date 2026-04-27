@@ -8,7 +8,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .api import HovalAuthError, HovalAPIError, HovalConnectAPI
-from .const import CONF_PLANT_ID, DOMAIN, UPDATE_INTERVAL_SECONDS
+from .const import (
+    CONF_EMAIL,
+    CONF_PASSWORD,
+    CONF_PLANT_ID,
+    CONF_TOKEN_EXPIRES_AT,
+    CONF_TOKEN_ISSUED_AT,
+    CONF_TOKEN_RENEW_AFTER,
+    DOMAIN,
+    UPDATE_INTERVAL_SECONDS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.CLIMATE, Platform.SENSOR, Platform.SELECT]
@@ -17,12 +26,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     session = async_get_clientsession(hass)
     api = HovalConnectAPI(
         session=session,
-        access_token=entry.data["access_token"],
-        refresh_token=entry.data["refresh_token"],
+        access_token=entry.data.get("access_token"),
+        refresh_token=entry.data.get("refresh_token"),
+        token_issued_at=entry.data.get(CONF_TOKEN_ISSUED_AT),
+        token_expires_at=entry.data.get(CONF_TOKEN_EXPIRES_AT),
+        token_renew_after=entry.data.get(CONF_TOKEN_RENEW_AFTER),
+        email=entry.data.get(CONF_EMAIL),
+        password=entry.data.get(CONF_PASSWORD),
     )
-    # Mark access token as expired on startup
-    # → first update cycle will fetch a fresh token via refresh token
-    api._expires_at = 0.0
     plant_id = entry.data[CONF_PLANT_ID]
 
     async def _update():
@@ -51,8 +62,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             raise UpdateFailed(str(err)) from err
 
     # Save refreshed tokens back to config entry for persistence
-    def _save_tokens(access_token: str, refresh_token: str) -> None:
-        new_data = {**entry.data, "access_token": access_token, "refresh_token": refresh_token}
+    def _save_tokens(auth_data: dict) -> None:
+        new_data = {**entry.data, **auth_data}
         hass.config_entries.async_update_entry(entry, data=new_data)
         _LOGGER.debug("Tokens refreshed and saved to config entry")
 

@@ -3,10 +3,11 @@
     "step": {
       "user": {
         "title": "Hoval Connect",
-        "description": "Enter tokens from the Setup Tool.",
+        "description": "Sign in with your HovalConnect account. Email and password are only stored if permanent credential storage is enabled.",
         "data": {
-          "access_token": "Access Token",
-          "refresh_token": "Refresh Token"
+          "email": "Email",
+          "password": "Password",
+          "store_password": "Store email and password permanently"
         }
       },
       "plant": {
@@ -17,15 +18,17 @@
       },
       "reauth_confirm": {
         "title": "Hoval Connect – Re-authenticate",
-        "description": "Tokens expired. Run the Setup Tool to get new tokens.",
+        "description": "Authentication expired. Sign in again with your HovalConnect account. Email and password are only stored if permanent credential storage is enabled.",
         "data": {
-          "access_token": "Access Token",
-          "refresh_token": "Refresh Token"
+          "email": "Email",
+          "password": "Password",
+          "store_password": "Store email and password permanently"
         }
       }
     },
     "error": {
-      "cannot_connect": "Connection failed – token invalid or expired."
+      "cannot_connect": "Connection failed.",
+      "invalid_auth": "Authentication failed. Check your credentials."
     },
     "abort": {
       "no_plants": "No plants found.",

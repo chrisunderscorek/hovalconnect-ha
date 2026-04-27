@@ -1,6 +1,6 @@
 # Hoval Connect – Home Assistant Integration
 
-[![Version](https://img.shields.io/badge/version-0.0.2-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
+[![Version](https://img.shields.io/badge/version-0.0.3-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -47,15 +47,7 @@ All devices compatible with the **HovalConnect App** (iOS/Android), e.g.:
 
 ## Installation
 
-### Step 1 – Get Tokens (once)
-
-1. [Download Setup Tool](setup_tool/) → extract ZIP
-2. Double-click `install.bat` (downloads Chromium ~150MB, one-time only)
-3. Double-click `start.bat`
-4. Enter your Hoval email and password → click **Get Tokens**
-5. Access Token and Refresh Token are displayed with copy buttons
-
-### Step 2 – Install Integration
+### Step 1 – Install Integration
 
 **Manual:**
 1. Copy folder `custom_components/hovalconnect/` to `config/custom_components/hovalconnect/`
@@ -73,34 +65,35 @@ All devices compatible with the **HovalConnect App** (iOS/Android), e.g.:
 3. Category: Integration → Add
 4. Install integration → Restart HA
 
-### Step 3 – Configure
+### Step 2 – Configure
 
 1. Settings → Integrations → **+ Add Integration**
 2. Search for "Hoval Connect"
-3. Paste Access Token and Refresh Token from Setup Tool
-4. Select your plant → Done ✅
+3. Enter your HovalConnect email and password
+4. Optional: enable **Store email and password permanently** if Home Assistant should be allowed to renew tokens with your credentials after token-based renewal fails
+5. Select your plant → Done
 
 ---
 
 ## Token Management
 
-Tokens are **renewed automatically** – one-time setup is sufficient for permanent operation.
+During setup Home Assistant exchanges your HovalConnect email and password for OAuth tokens and stores the token data in the config entry. Email and password are not stored unless **Store email and password permanently** is enabled.
 
 | Token | Validity | Renewal |
 |-------|----------|---------|
-| Access Token | 30 minutes | Automatic by HA |
-| Refresh Token | Weeks/months | Automatic, saved in HA config |
+| Access Token | `expires_in` from Hoval/SAP IAS, minus 60 seconds safety margin | Renewed after half of its effective lifetime when a refresh token or stored credentials are available |
+| Refresh Token | Optional, if returned by Hoval/SAP IAS | Preferred renewal mechanism |
+| Stored Email/Password | Optional | Used only as explicit fallback when token-based renewal is unavailable or rejected |
 
-If the integration goes offline after a long HA downtime: run the Setup Tool again and enter new tokens.
+If token renewal fails while the current access token is still valid, the integration keeps using the current token and retries renewal every 60 seconds. If no refresh token is available and credentials were not stored, Home Assistant will ask you to re-authenticate when the saved token expires.
 
 ---
 
 ## Security
 
-- Credentials are **never stored** (neither locally nor in the cloud)
+- Email and password are only stored when **Store email and password permanently** is enabled
 - Transmission exclusively via **HTTPS** to SAP IAS (Hoval Identity Provider)
-- Browser (Chromium) runs **headless** (invisible) and is closed immediately after login
-- Tokens are deleted from RAM after handover
+- Access and refresh tokens are saved in the Home Assistant config entry and must be treated as bearer secrets
 
 ---
 
@@ -118,7 +111,7 @@ This integration uses the unofficial HovalConnect Cloud API, reverse-engineered 
 | `PATCH /v3/plants/{id}/circuits/{path}/programs` | Permanent temperature |
 | `POST /v3/plants/{id}/circuits/{path}/programs/{program}` | Switch program |
 
-**Auth:** OAuth2 PKCE via SAP IAS  
+**Auth:** OAuth2 via SAP IAS
 **Update interval:** 30 seconds
 
 ---
@@ -126,7 +119,6 @@ This integration uses the unofficial HovalConnect Cloud API, reverse-engineered 
 ## Known Limitations
 
 - No official API access → API may change without notice
-- Setup Tool requires Windows (Linux/Mac planned)
 - Two-factor authentication is not supported
 
 ---

@@ -3,10 +3,11 @@
     "step": {
       "user": {
         "title": "Hoval Connect",
-        "description": "Tokens aus dem Setup Tool einfügen.",
+        "description": "Mit deinem HovalConnect Konto anmelden. E-Mail und Passwort werden nur gespeichert, wenn die Option zum dauerhaften Speichern aktiviert ist.",
         "data": {
-          "access_token": "Access Token",
-          "refresh_token": "Refresh Token"
+          "email": "E-Mail",
+          "password": "Passwort",
+          "store_password": "E-Mail und Passwort dauerhaft speichern"
         }
       },
       "plant": {
@@ -17,15 +18,17 @@
       },
       "reauth_confirm": {
         "title": "Hoval Connect – Neu anmelden",
-        "description": "Tokens abgelaufen. Setup Tool erneut ausführen.",
+        "description": "Die Anmeldung ist abgelaufen. Bitte erneut mit deinem HovalConnect Konto anmelden. E-Mail und Passwort werden nur gespeichert, wenn die Option zum dauerhaften Speichern aktiviert ist.",
         "data": {
-          "access_token": "Access Token",
-          "refresh_token": "Refresh Token"
+          "email": "E-Mail",
+          "password": "Passwort",
+          "store_password": "E-Mail und Passwort dauerhaft speichern"
         }
       }
     },
     "error": {
-      "cannot_connect": "Verbindung fehlgeschlagen – Token ungültig oder abgelaufen."
+      "cannot_connect": "Verbindung fehlgeschlagen.",
+      "invalid_auth": "Anmeldung fehlgeschlagen. Bitte Zugangsdaten prüfen."
     },
     "abort": {
       "no_plants": "Keine Anlagen gefunden.",

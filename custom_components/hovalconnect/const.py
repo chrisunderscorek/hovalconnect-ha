@@ -14,6 +14,12 @@ API_TEMP_CHANGE    = f"{API_BASE}/v3/plants/{{plant_id}}/circuits/{{path}}/tempo
 API_SET_PROGRAM    = f"{API_BASE}/v3/plants/{{plant_id}}/circuits/{{path}}/programs/{{program}}"
 
 CONF_PLANT_ID = "plant_id"
+CONF_EMAIL = "email"
+CONF_PASSWORD = "password"
+CONF_STORE_PASSWORD = "store_password"
+CONF_TOKEN_ISSUED_AT = "token_issued_at"
+CONF_TOKEN_EXPIRES_AT = "token_expires_at"
+CONF_TOKEN_RENEW_AFTER = "token_renew_after"
 UPDATE_INTERVAL_SECONDS = 30
 TEMP_DURATION_DEFAULT = "fourHours"
 

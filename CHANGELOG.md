@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.3] – 2026-04-27
+
+### Authentication
+
+- Add HovalConnect email/password setup flow.
+- Store OAuth token data and renewal timing after setup.
+- Do not store email or password unless permanent credential storage is enabled.
+- Prefer refresh-token renewal and use stored credentials only as an explicit fallback.
+- Renew after half of the effective token lifetime and retry failed renewal every 60 seconds while the current token is still valid.
+- Trigger re-authentication when the token expires and cannot be renewed.
+
 ## [0.0.1] – 2026-03-17
 
 ### Initial Release

@@ -20,8 +20,11 @@ This app installs the bundled Hoval Connect custom integration into the Home Ass
 3. Start the app once.
 4. Restart Home Assistant Core.
 5. Add **Hoval Connect** from **Settings > Devices & services**.
+6. Sign in with your HovalConnect email and password.
 
 The app exits after copying the integration files. Start it again whenever you want to update the installed integration from the app image.
+
+The integration stores OAuth token data after setup. Email and password are only stored if you enable **Store email and password permanently** in the integration setup or re-authentication flow; otherwise Home Assistant will ask you to re-authenticate when the saved token can no longer be renewed. Token renewal is attempted after half of the effective token lifetime and retried every 60 seconds while the current token is still valid.
 
 ## Network and Security
 
