@@ -1,6 +1,6 @@
 # Hoval Connect – Home Assistant Integration
 
-[![Version](https://img.shields.io/badge/version-0.0.3-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
+[![Version](https://img.shields.io/badge/version-0.0.4-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -59,6 +59,10 @@ All devices compatible with the **HovalConnect App** (iOS/Android), e.g.:
 3. Install **Hoval Connect**
 4. Start the app once → Restart Home Assistant Core
 
+The Home Assistant app copies the bundled integration into
+`/config/custom_components/hovalconnect` and then exits. Start it again whenever
+you want to refresh the installed integration from the app image.
+
 **Via HACS (Custom Repository):**
 1. HACS → Integrations → ⋮ → Custom Repositories
 2. URL: `https://github.com/chrisunderscorek/hovalconnect-ha`
@@ -87,6 +91,10 @@ During setup Home Assistant exchanges your HovalConnect email and password for O
 
 If token renewal fails while the current access token is still valid, the integration keeps using the current token and retries renewal every 60 seconds. If no refresh token is available and credentials were not stored, Home Assistant will ask you to re-authenticate when the saved token expires.
 
+The SAP IAS `access_token` can be opaque. Hoval's core API currently expects a
+JWT-shaped bearer token and otherwise rejects requests as malformed, so the
+integration prefers the JWT-shaped `id_token` when one is returned.
+
 ---
 
 ## Security
@@ -111,8 +119,50 @@ This integration uses the unofficial HovalConnect Cloud API, reverse-engineered 
 | `PATCH /v3/plants/{id}/circuits/{path}/programs` | Permanent temperature |
 | `POST /v3/plants/{id}/circuits/{path}/programs/{program}` | Switch program |
 
-**Auth:** OAuth2 via SAP IAS
-**Update interval:** 30 seconds
+- **Auth:** OAuth2 via SAP IAS, JWT bearer for the Hoval core API
+- **Update interval:** 30 seconds
+
+### Frontend App Version
+
+The Hoval core API also checks the frontend app version sent by the official
+mobile app. This integration uses `3.2.0` as the bundled fallback version.
+
+At startup the integration checks Google Play for the current HovalConnect app
+version and logs the default, the detected store version, and the effective
+version header. If Hoval returns HTTP 426 `Upgrade Required`, the integration
+checks the store version again and retries the failed request once if the
+effective version changed. These rechecks are limited to one 6-hour slot
+calculated from the integration startup time, so installations do not all check
+at the same wall-clock time.
+
+### API Reference Snapshot
+
+`docs/api-docs.json` contains a reference OpenAPI snapshot from:
+
+```text
+GET https://azure-iot-prod.hoval.com/core/v3/api-docs
+```
+
+The snapshot was captured with HovalConnect frontend app version `3.2.0`. It is
+OpenAPI `3.1.0`, contains 152 paths, and should be treated as an unofficial
+reference, not as a stable contract from Hoval.
+
+### Debug Tool
+
+`tools/debug_hoval_auth.py` can exchange HovalConnect credentials for token data,
+inspect existing tokens, print sample API calls, and probe the current mobile app
+versions.
+
+```bash
+tools/debug_hoval_auth.py --store-versions
+tools/debug_hoval_auth.py --sample-curl
+tools/debug_hoval_auth.py --username user@example.com --sample-curl --test-api-docs
+tools/debug_hoval_auth.py --bump-app-version 3.2.0 --sample-curl
+```
+
+Use `--only-tokens` when piping token output into another command. Use
+`--bump-app-version VERSION` to skip Google Play / Apple App Store probing and
+force a specific frontend app version header.
 
 ---
 

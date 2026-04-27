@@ -34,6 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         email=entry.data.get(CONF_EMAIL),
         password=entry.data.get(CONF_PASSWORD),
     )
+    await api.async_update_frontend_app_version(reason="startup", force=True)
     plant_id = entry.data[CONF_PLANT_ID]
 
     async def _update():

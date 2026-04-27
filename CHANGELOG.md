@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.4] – 2026-04-27
+
+### Authentication
+
+- Prefer the JWT-shaped `id_token` as Hoval API bearer token when SAP IAS returns an opaque OAuth `access_token`.
+- Update the simulated Hoval frontend app version header to `3.2.0`.
+- Check the current Google Play HovalConnect app version during integration startup and after HTTP 426 responses, throttled to 6-hour slots from integration start.
+- Print an explicit `api_bearer_token` in the debug auth tool and use it for `--sample-curl` / `--test-api-docs`.
+- Fetch Google Play and Apple App Store versions in the debug auth tool and use the newest store version for sample API calls.
+- Add `--bump-app-version` to skip store probing with a fixed version and `--only-tokens` to suppress store/diagnostic output.
+- Add `docs/api-docs.json`, an OpenAPI snapshot captured with HovalConnect frontend app version `3.2.0`.
+- Update the README with token handling, frontend app version handling, the debug tool, and the API snapshot.
+
 ## [0.0.3] – 2026-04-27
 
 ### Authentication

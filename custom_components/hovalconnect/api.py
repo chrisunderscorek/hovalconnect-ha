@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 
 import aiohttp
@@ -18,15 +19,22 @@ from .const import (
     CONF_TOKEN_EXPIRES_AT,
     CONF_TOKEN_ISSUED_AT,
     CONF_TOKEN_RENEW_AFTER,
+    DEFAULT_FRONTEND_APP_VERSION,
+    FRONTEND_VERSION_CHECK_INTERVAL_SECONDS,
+    GOOGLE_PLAY_APP_URL,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-APP_HEADERS = {
+BASE_APP_HEADERS = {
     "User-Agent": "HovalConnect/6022 CFNetwork/3860.400.51 Darwin/25.3.0",
     "Accept": "application/json",
     "x-requested-with": "XMLHttpRequest",
-    "hovalconnect-frontend-app-version": "3.1.4",
+}
+STORE_HEADERS = {
+    "User-Agent": BASE_APP_HEADERS["User-Agent"],
+    "Accept": "text/html,application/json",
+    "Accept-Language": "en-US,en;q=0.9",
 }
 
 API_SET_CONSTANT = "https://azure-iot-prod.hoval.com/core/v3/plants/{plant_id}/circuits/{path}/programs"
@@ -36,6 +44,36 @@ class HovalAuthError(Exception):
 
 class HovalAPIError(Exception):
     pass
+
+def _looks_like_jwt(token: str | None) -> bool:
+    return bool(token and token.count(".") == 2)
+
+def _api_bearer_token(data: dict) -> str | None:
+    id_token = data.get("id_token")
+    access_token = data.get("access_token")
+
+    # SAP IAS may return an opaque OAuth access_token. The Hoval core API expects
+    # a JWT-shaped bearer and otherwise returns "Malformed token", so prefer the
+    # id_token when it is the JWT-shaped token in the response.
+    if _looks_like_jwt(id_token):
+        return id_token
+    if _looks_like_jwt(access_token):
+        return access_token
+    return id_token or access_token
+
+def _parse_google_play_version(html: str) -> str | None:
+    # Google Play does not expose a stable unauthenticated version API. These
+    # patterns target the embedded app detail data and intentionally fail closed
+    # so the integration can keep using DEFAULT_FRONTEND_APP_VERSION.
+    patterns = (
+        r'"141":\[\[\["([0-9]+(?:\.[0-9]+)+)"\]\]',
+        r'\[\[\["([0-9]+(?:\.[0-9]+)+)"\]\],\[\[\[[0-9]+\]\]',
+    )
+    for pattern in patterns:
+        match = re.search(pattern, html)
+        if match:
+            return match.group(1)
+    return None
 
 class HovalConnectAPI:
     def __init__(
@@ -77,6 +115,134 @@ class HovalConnectAPI:
         self._on_token_refresh = None  # callback(auth_data)
         self._next_token_retry_at: float = 0.0
         self._token_retry_interval: float = 60.0
+        self._frontend_app_version = DEFAULT_FRONTEND_APP_VERSION
+        self._startup_monotonic = time.monotonic()
+        self._last_frontend_version_check_slot: int | None = None
+        self._last_frontend_version_skip_warning_slot: int | None = None
+
+    def _app_headers(self) -> dict:
+        return {
+            **BASE_APP_HEADERS,
+            "hovalconnect-frontend-app-version": self._frontend_app_version,
+        }
+
+    def _auth_headers(self) -> dict:
+        return {**self._app_headers(), "Authorization": f"Bearer {self._access_token}"}
+
+    def _plant_headers(self, plant_token: str) -> dict:
+        return {**self._auth_headers(), "x-plant-access-token": plant_token}
+
+    def _frontend_version_check_slot(self) -> int:
+        # Slotting from integration startup spreads checks naturally across
+        # users instead of making every installation check at a wall-clock time.
+        elapsed = max(0.0, time.monotonic() - self._startup_monotonic)
+        return int(elapsed // FRONTEND_VERSION_CHECK_INTERVAL_SECONDS)
+
+    async def _fetch_google_play_frontend_version(self) -> tuple[str | None, str | None]:
+        timeout = aiohttp.ClientTimeout(total=8)
+        async with self._session.get(GOOGLE_PLAY_APP_URL, headers=STORE_HEADERS, timeout=timeout) as resp:
+            if resp.status >= 400:
+                return None, f"HTTP {resp.status}"
+            text = await resp.text()
+
+        version = _parse_google_play_version(text)
+        if not version:
+            return None, "Version not found"
+        return version, None
+
+    async def async_update_frontend_app_version(self, reason: str, force: bool = False) -> bool:
+        slot = self._frontend_version_check_slot()
+        if not force and self._last_frontend_version_check_slot == slot:
+            # 426 may repeat on every polling cycle. Keep one visible warning per
+            # slot, then wait for the next 6-hour window before probing again.
+            if self._last_frontend_version_skip_warning_slot != slot:
+                self._last_frontend_version_skip_warning_slot = slot
+                _LOGGER.warning(
+                    "HovalConnect frontend app version check skipped after %s: already checked in "
+                    "6-hour slot %s since integration start. Default=%s, effective=%s. "
+                    "If Hoval requires a newer app version, functionality may remain limited until "
+                    "the next 6-hour slot.",
+                    reason,
+                    slot,
+                    DEFAULT_FRONTEND_APP_VERSION,
+                    self._frontend_app_version,
+                )
+            return False
+
+        self._last_frontend_version_check_slot = slot
+        previous_version = self._frontend_app_version
+        found_version: str | None = None
+        error: str | None = None
+
+        try:
+            found_version, error = await self._fetch_google_play_frontend_version()
+        except Exception as err:
+            error = str(err)
+
+        if found_version:
+            self._frontend_app_version = found_version
+
+        _LOGGER.warning(
+            "HovalConnect frontend app version check (%s): default=%s, google_play=%s, "
+            "effective=%s%s. This integration emulates the official HovalConnect app version; "
+            "Hoval may require a newer frontend version after app updates and functionality may "
+            "be limited until the version is refreshed. The check runs at integration startup and "
+            "after HTTP 426 at most once per 6 hours calculated from this integration start.",
+            reason,
+            DEFAULT_FRONTEND_APP_VERSION,
+            found_version or "<not found>",
+            self._frontend_app_version,
+            f", error={error}" if error else "",
+        )
+        return self._frontend_app_version != previous_version
+
+    async def _handle_upgrade_required(self, body: str) -> bool:
+        _LOGGER.warning("Hoval API returned HTTP 426 Upgrade Required: %s", body or "<empty body>")
+        return await self.async_update_frontend_app_version(reason="http_426", force=False)
+
+    async def _request_json(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers_factory,
+        empty_statuses: set[int] | None = None,
+        **kwargs,
+    ):
+        retry_on_426 = True
+        while True:
+            async with self._session.request(method, url, headers=headers_factory(), **kwargs) as resp:
+                if empty_statuses and resp.status in empty_statuses:
+                    return {}
+                if resp.status == 426 and retry_on_426:
+                    body = await resp.text()
+                    retry_on_426 = False
+                    # A 426 normally means Hoval bumped the accepted frontend
+                    # app version. Re-check the store version and retry once if
+                    # the effective header changed.
+                    if await self._handle_upgrade_required(body):
+                        continue
+                resp.raise_for_status()
+                return await resp.json(content_type=None)
+
+    async def _request_no_json(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers_factory,
+        **kwargs,
+    ) -> None:
+        retry_on_426 = True
+        while True:
+            async with self._session.request(method, url, headers=headers_factory(), **kwargs) as resp:
+                if resp.status == 426 and retry_on_426:
+                    body = await resp.text()
+                    retry_on_426 = False
+                    if await self._handle_upgrade_required(body):
+                        continue
+                resp.raise_for_status()
+                return
 
     def set_token_refresh_callback(self, callback) -> None:
         """Called whenever tokens are refreshed — use to persist new tokens."""
@@ -98,7 +264,7 @@ class HovalConnectAPI:
         return data
 
     def _set_auth_tokens(self, data: dict, default_expires_in: int) -> None:
-        token = data.get("access_token") or data.get("id_token")
+        token = _api_bearer_token(data)
         if not token:
             raise HovalAPIError("Auth response missing token")
 
@@ -133,7 +299,7 @@ class HovalConnectAPI:
                 "password": self._password,
                 "scope": "openid offline_access",
             },
-            headers={**APP_HEADERS, "Content-Type": "application/x-www-form-urlencoded"},
+            headers={**self._app_headers(), "Content-Type": "application/x-www-form-urlencoded"},
         ) as resp:
             if resp.status in (400, 401, 403):
                 raise HovalAuthError("Invalid credentials")
@@ -146,7 +312,7 @@ class HovalConnectAPI:
         async with self._session.post(
             AUTH_TOKEN_URL,
             data={"grant_type": "refresh_token", "refresh_token": self._refresh_token, "client_id": CLIENT_ID},
-            headers={**APP_HEADERS, "Content-Type": "application/x-www-form-urlencoded"},
+            headers={**self._app_headers(), "Content-Type": "application/x-www-form-urlencoded"},
         ) as resp:
             if resp.status in (400, 401, 403):
                 raise HovalAuthError("Refresh token expired")
@@ -199,82 +365,91 @@ class HovalConnectAPI:
         if self._plant_token and time.monotonic() < self._plant_token_expires:
             return self._plant_token
         await self._ensure_access_token()
-        async with self._session.get(
+        data = await self._request_json(
+            "GET",
             API_PLANT_SETTINGS.format(plant_id=plant_id),
-            headers={**APP_HEADERS, "Authorization": f"Bearer {self._access_token}"},
-        ) as resp:
-            resp.raise_for_status()
-            data = await resp.json(content_type=None)
+            headers_factory=self._auth_headers,
+        )
         self._plant_token = data["token"]
         self._plant_token_expires = time.monotonic() + 800
         return self._plant_token
 
     async def _h(self, plant_id: str) -> dict:
         pt = await self._ensure_plant_token(plant_id)
-        return {**APP_HEADERS, "Authorization": f"Bearer {self._access_token}", "x-plant-access-token": pt}
+        return self._plant_headers(pt)
 
     async def get_plants(self) -> list[dict]:
         await self._ensure_access_token()
-        async with self._session.get(API_MY_PLANTS,
-            headers={**APP_HEADERS, "Authorization": f"Bearer {self._access_token}"}) as resp:
-            resp.raise_for_status()
-            return await resp.json(content_type=None)
+        return await self._request_json(
+            "GET",
+            API_MY_PLANTS,
+            headers_factory=self._auth_headers,
+        )
 
     async def get_circuits(self, plant_id: str) -> list[dict]:
-        async with self._session.get(API_CIRCUITS.format(plant_id=plant_id),
-            headers=await self._h(plant_id)) as resp:
-            if resp.status == 401:
-                # Token expired — force refresh of both tokens and retry once
-                _LOGGER.debug("401 on circuits, forcing token refresh")
-                self._expires_at = 0.0
-                self._renew_after = 0.0
-                self._next_token_retry_at = 0.0
-                self._plant_token = None
-                async with self._session.get(API_CIRCUITS.format(plant_id=plant_id),
-                    headers=await self._h(plant_id)) as resp2:
-                    resp2.raise_for_status()
-                    return await resp2.json(content_type=None)
-            resp.raise_for_status()
-            return await resp.json(content_type=None)
+        async def _get_once() -> list[dict]:
+            plant_token = await self._ensure_plant_token(plant_id)
+            return await self._request_json(
+                "GET",
+                API_CIRCUITS.format(plant_id=plant_id),
+                headers_factory=lambda: self._plant_headers(plant_token),
+            )
+
+        try:
+            return await _get_once()
+        except aiohttp.ClientResponseError as err:
+            if err.status != 401:
+                raise
+            # Token expired — force refresh of both tokens and retry once
+            _LOGGER.debug("401 on circuits, forcing token refresh")
+            self._expires_at = 0.0
+            self._renew_after = 0.0
+            self._next_token_retry_at = 0.0
+            self._plant_token = None
+            return await _get_once()
 
     async def get_live_values(self, plant_id: str, circuit_path: str, circuit_type: str) -> dict:
         """Live-Werte für einen Circuit: Temp, Modulation, Betriebsstunden etc."""
-        h = await self._h(plant_id)
+        plant_token = await self._ensure_plant_token(plant_id)
         url = f"{API_LIVE_VALUES.format(plant_id=plant_id)}?circuitPath={circuit_path}&circuitType={circuit_type}"
-        async with self._session.get(url, headers=h) as resp:
-            if resp.status in (404, 502):
-                return {}
-            resp.raise_for_status()
-            data = await resp.json(content_type=None)
+        data = await self._request_json(
+            "GET",
+            url,
+            headers_factory=lambda: self._plant_headers(plant_token),
+            empty_statuses={404, 502},
+        )
         # Convert list of {key, value} to dict
         return {item["key"]: item["value"] for item in data if "key" in item}
 
     async def set_temporary_change(self, plant_id: str, path: str, value: float, duration: str = "fourHours") -> None:
         """Temporary temperature change (weekly program continues)."""
-        h = await self._h(plant_id)
-        async with self._session.post(
+        plant_token = await self._ensure_plant_token(plant_id)
+        await self._request_no_json(
+            "POST",
             API_TEMP_CHANGE.format(plant_id=plant_id, path=path),
             json={"duration": duration, "value": value},
-            headers={**h, "Content-Type": "application/json"},
-        ) as resp:
-            resp.raise_for_status()
+            headers_factory=lambda: {**self._plant_headers(plant_token), "Content-Type": "application/json"},
+        )
 
     async def set_constant_temp(self, plant_id: str, path: str, value: float) -> None:
         """Dauerhafte Temperatur im Constant-Programm."""
-        h = await self._h(plant_id)
-        async with self._session.patch(
+        plant_token = await self._ensure_plant_token(plant_id)
+        await self._request_no_json(
+            "PATCH",
             API_SET_CONSTANT.format(plant_id=plant_id, path=path),
             json={"constant": {"value": value}},
-            headers={**h, "Content-Type": "application/json"},
-        ) as resp:
-            resp.raise_for_status()
+            headers_factory=lambda: {**self._plant_headers(plant_token), "Content-Type": "application/json"},
+        )
 
     async def set_program(self, plant_id: str, path: str, program: str) -> None:
         """Switch program: week1, week2, constant."""
-        h = await self._h(plant_id)
-        async with self._session.post(
+        plant_token = await self._ensure_plant_token(plant_id)
+        await self._request_no_json(
+            "POST",
             API_SET_PROGRAM.format(plant_id=plant_id, path=path, program=program),
-            headers={**h, "Content-Type": "application/x-www-form-urlencoded"},
+            headers_factory=lambda: {
+                **self._plant_headers(plant_token),
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
             data="",
-        ) as resp:
-            resp.raise_for_status()
+        )
