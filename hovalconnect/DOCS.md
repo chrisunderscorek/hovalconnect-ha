@@ -1,6 +1,6 @@
 # Hoval Connect App
 
-This app installs the bundled Hoval Connect custom integration into the Home Assistant configuration directory. It is an alternative to HACS or manual copying; the integration code remains available under `custom_components/hovalconnect` for HACS users.
+This app installs the bundled Hoval Connect custom integration into the Home Assistant configuration directory. It is an alternative installation path for users who previously installed Hoval Connect via HACS or by manually copying files; the integration code remains available under `custom_components/hovalconnect` for HACS users.
 
 ## Configuration
 
