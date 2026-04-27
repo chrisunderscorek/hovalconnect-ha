@@ -9,6 +9,8 @@ CLIENT_ID = "991b54b2-7e67-47ef-81fe-572e21c59899"
 DEFAULT_FRONTEND_APP_VERSION = "3.2.0"
 FRONTEND_VERSION_CHECK_INTERVAL_SECONDS = 6 * 60 * 60
 GOOGLE_PLAY_APP_URL = "https://play.google.com/store/apps/details?id=com.hoval.connect2&hl=en_US&gl=US"
+TOKEN_RENEWAL_SAFETY_MARGIN_SECONDS = 60
+TOKEN_RENEWAL_RETRY_BACKOFF_SECONDS = (10, 10, 10, 30, 30, 30, 60, 60, 60, 120)
 
 API_MY_PLANTS      = f"{API_BASE}/api/my-plants?page=0&size=12"
 API_PLANT_SETTINGS = f"{API_BASE}/v1/plants/{{plant_id}}/settings"

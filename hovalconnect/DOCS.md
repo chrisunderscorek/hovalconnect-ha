@@ -24,7 +24,7 @@ This app installs the bundled Hoval Connect custom integration into the Home Ass
 
 The app exits after copying the integration files. Start it again whenever you want to update the installed integration from the app image.
 
-The integration stores OAuth token data after setup. Email and password are only stored if you enable **Store email and password permanently** in the integration setup or re-authentication flow; otherwise Home Assistant will ask you to re-authenticate when the saved token can no longer be renewed. Token renewal is attempted after half of the effective token lifetime and retried every 60 seconds while the current token is still valid.
+The integration stores OAuth token data after setup. Email and password are only stored if you enable **Store email and password permanently** in the integration setup or re-authentication flow; otherwise Home Assistant will ask you to re-authenticate when the saved token can no longer be renewed. Token renewal is first attempted after half of the effective token lifetime. Failed renewal attempts are retried while the current token remains valid with a staged backoff: 3 attempts after 10 seconds, 3 attempts after 30 seconds, 3 attempts after 60 seconds, then every 120 seconds. If the token endpoint sends `Retry-After`, the integration waits at least that long.
 
 ## Network and Security
 

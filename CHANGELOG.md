@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.5] – 2026-04-27
+
+### Authentication
+
+- Retry failed token renewals with staged backoff: 3x 10 seconds, 3x 30 seconds, 3x 60 seconds, then 120 seconds.
+- Honor token endpoint `Retry-After` responses when they request a longer wait.
+- Clarify token renewal timing in the README and Home Assistant app documentation.
+
 ## [0.0.4] – 2026-04-27
 
 ### Authentication

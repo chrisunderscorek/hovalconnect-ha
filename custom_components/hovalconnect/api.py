@@ -4,6 +4,8 @@ from __future__ import annotations
 import logging
 import re
 import time
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 import aiohttp
 
@@ -22,6 +24,8 @@ from .const import (
     DEFAULT_FRONTEND_APP_VERSION,
     FRONTEND_VERSION_CHECK_INTERVAL_SECONDS,
     GOOGLE_PLAY_APP_URL,
+    TOKEN_RENEWAL_RETRY_BACKOFF_SECONDS,
+    TOKEN_RENEWAL_SAFETY_MARGIN_SECONDS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -75,6 +79,27 @@ def _parse_google_play_version(html: str) -> str | None:
             return match.group(1)
     return None
 
+def _retry_after_seconds(headers) -> float | None:
+    if not headers:
+        return None
+
+    value = headers.get("Retry-After")
+    if not value:
+        return None
+
+    value = value.strip()
+    if value.isdecimal():
+        return max(0.0, float(value))
+
+    try:
+        retry_at = parsedate_to_datetime(value)
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return None
+
+    if retry_at.tzinfo is None:
+        retry_at = retry_at.replace(tzinfo=timezone.utc)
+    return max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
+
 class HovalConnectAPI:
     def __init__(
         self,
@@ -114,7 +139,7 @@ class HovalConnectAPI:
         self._plant_token_expires: float = 0.0
         self._on_token_refresh = None  # callback(auth_data)
         self._next_token_retry_at: float = 0.0
-        self._token_retry_interval: float = 60.0
+        self._token_renewal_retry_count: int = 0
         self._frontend_app_version = DEFAULT_FRONTEND_APP_VERSION
         self._startup_monotonic = time.monotonic()
         self._last_frontend_version_check_slot: int | None = None
@@ -269,7 +294,7 @@ class HovalConnectAPI:
             raise HovalAPIError("Auth response missing token")
 
         expires_in = int(data.get("expires_in", default_expires_in))
-        lifetime = max(60, expires_in - 60)
+        lifetime = max(60, expires_in - TOKEN_RENEWAL_SAFETY_MARGIN_SECONDS)
         renew_after = max(30, lifetime / 2)
         now_monotonic = time.monotonic()
         now_epoch = time.time()
@@ -281,10 +306,24 @@ class HovalConnectAPI:
         self._expires_at = now_monotonic + lifetime
         self._renew_after = now_monotonic + renew_after
         self._next_token_retry_at = 0.0
+        self._token_renewal_retry_count = 0
         self._plant_token = None
 
         if self._on_token_refresh:
             self._on_token_refresh(self.auth_data())
+
+    def _token_renewal_retry_delay(self, err: Exception) -> float:
+        index = min(self._token_renewal_retry_count, len(TOKEN_RENEWAL_RETRY_BACKOFF_SECONDS) - 1)
+        local_delay = float(TOKEN_RENEWAL_RETRY_BACKOFF_SECONDS[index])
+        self._token_renewal_retry_count += 1
+
+        # RFC 9110 defines Retry-After as the server hint for when the next
+        # follow-up request should happen. If Hoval/SAP sends it, never retry
+        # earlier than that, but keep our local staged backoff as the floor.
+        retry_after = _retry_after_seconds(getattr(err, "headers", None))
+        if retry_after is None:
+            return local_delay
+        return max(local_delay, retry_after)
 
     async def _request_password_token(self) -> None:
         if not self._email or not self._password:
@@ -352,10 +391,11 @@ class HovalConnectAPI:
             await self._renew_access_token()
         except (HovalAuthError, HovalAPIError, aiohttp.ClientError) as err:
             if has_valid_token:
-                self._next_token_retry_at = now + self._token_retry_interval
+                retry_delay = self._token_renewal_retry_delay(err)
+                self._next_token_retry_at = now + retry_delay
                 _LOGGER.warning(
                     "Token renewal failed; retrying in %.0f seconds while existing token remains valid: %s",
-                    self._token_retry_interval,
+                    retry_delay,
                     err,
                 )
                 return

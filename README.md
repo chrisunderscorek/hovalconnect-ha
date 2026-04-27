@@ -1,6 +1,6 @@
 # Hoval Connect – Home Assistant Integration
 
-[![Version](https://img.shields.io/badge/version-0.0.4-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
+[![Version](https://img.shields.io/badge/version-0.0.5-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -85,11 +85,11 @@ During setup Home Assistant exchanges your HovalConnect email and password for O
 
 | Token | Validity | Renewal |
 |-------|----------|---------|
-| Access Token | `expires_in` from Hoval/SAP IAS, minus 60 seconds safety margin | Renewed after half of its effective lifetime when a refresh token or stored credentials are available |
+| Access Token | `expires_in` from Hoval/SAP IAS, minus 60 seconds safety margin | First renewal attempt after half of its effective lifetime when a refresh token or stored credentials are available |
 | Refresh Token | Optional, if returned by Hoval/SAP IAS | Preferred renewal mechanism |
 | Stored Email/Password | Optional | Used only as explicit fallback when token-based renewal is unavailable or rejected |
 
-If token renewal fails while the current access token is still valid, the integration keeps using the current token and retries renewal every 60 seconds. If no refresh token is available and credentials were not stored, Home Assistant will ask you to re-authenticate when the saved token expires.
+If token renewal fails while the current access token is still valid, the integration keeps using the current token and retries renewal with a staged backoff: 3 attempts after 10 seconds, 3 attempts after 30 seconds, 3 attempts after 60 seconds, then every 120 seconds. If the token endpoint sends `Retry-After`, the integration waits at least that long. If no refresh token is available and credentials were not stored, Home Assistant will ask you to re-authenticate when the saved token expires.
 
 The SAP IAS `access_token` can be opaque. Hoval's core API currently expects a
 JWT-shaped bearer token and otherwise rejects requests as malformed, so the
