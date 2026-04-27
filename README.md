@@ -1,6 +1,6 @@
 # Hoval Connect – Home Assistant Integration
 
-[![Version](https://img.shields.io/badge/version-0.0.5-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
+[![Version](https://img.shields.io/badge/version-0.0.6-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 

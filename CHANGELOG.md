@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.6] – 2026-04-27
+
+### Presentation
+
+- Add local Home Assistant brand images under `custom_components/hovalconnect/brand/` so the integration can show its icon and logo in Home Assistant 2026.3+.
+
 ## [0.0.5] – 2026-04-27
 
 ### Authentication
