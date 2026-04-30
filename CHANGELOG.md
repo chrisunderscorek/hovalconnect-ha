@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.7] – 2026-04-30
+
+### Localization
+
+- Add an integration language option with `System`, `Deutsch`, and `English`.
+- Keep the language scoped to Hoval Connect entity names and program labels instead of changing the global Home Assistant language.
+- Align German and English sensor names with the official HovalConnect app screenshots.
+- Add live sensors for heat generator status, return temperature, and hot water `SF2`.
+- Use the API heat generator name for Home Assistant device metadata instead of a hard-coded model.
+
 ## [0.0.6] – 2026-04-27
 
 ### Presentation

@@ -1,6 +1,6 @@
 # Hoval Connect – Home Assistant Integration
 
-[![Version](https://img.shields.io/badge/version-0.0.6-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
+[![Version](https://img.shields.io/badge/version-0.0.7-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -26,11 +26,13 @@ All devices compatible with the **HovalConnect App** (iOS/Android), e.g.:
 | `climate.hoval_hot_water` | Climate | Read & set hot water temperature |
 | `select.hoval_heating_circuit_program` | Select | Weekly program 1/2 / Constant / Eco mode |
 | `sensor.hoval_flow_temperature` | Sensor | Flow temperature actual |
+| `sensor.hoval_return_temperature` | Sensor | Return temperature |
 | `sensor.hoval_outside_temperature` | Sensor | Outside temperature |
 | `sensor.hoval_modulation` | Sensor | Compressor modulation (%) |
 | `sensor.hoval_operating_hours` | Sensor | Total operating hours |
 | `sensor.hoval_operation_cycles` | Sensor | Total switching cycles |
-| `sensor.hoval_storage_temperature` | Sensor | Hot water storage temperature |
+| `sensor.hoval_actual_temperature_sf1` | Sensor | Hot water actual temperature SF1 |
+| `sensor.hoval_actual_temperature_sf2` | Sensor | Hot water actual temperature SF2 |
 | `sensor.hoval_*_status` | Sensor | Operating status (heating/charging/off) |
 | `sensor.hoval_*_active_program` | Sensor | Active program |
 
@@ -75,7 +77,18 @@ you want to refresh the installed integration from the app image.
 2. Search for "Hoval Connect"
 3. Enter your HovalConnect email and password
 4. Optional: enable **Store email and password permanently** if Home Assistant should be allowed to renew tokens with your credentials after token-based renewal fails
-5. Select your plant → Done
+5. Select the integration language: **System**, **Deutsch**, or **English**
+6. Select your plant → Done
+
+The language option controls the Hoval Connect entity names and program labels
+inside this integration only. It does not change the global Home Assistant
+language. Change it later from **Settings → Devices & services → Hoval Connect
+→ Configure**.
+
+German and English entity names follow the official HovalConnect app wording
+where known, for example `Wärmeerzeuger-Ist`, `Vorlauftemperatur Ist`,
+`Ist-Temperatur SF1`, `Ist-Temperatur SF2`, `Heat generator actual`, and
+`Flow temperature actual`.
 
 ---
 

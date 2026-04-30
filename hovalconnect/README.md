@@ -15,3 +15,5 @@ Then install and start the **Hoval Connect** app once. It copies the integration
 ```
 
 Restart Home Assistant Core afterwards and add the integration from **Settings > Devices & services**.
+
+During integration setup you can choose **System**, **Deutsch**, or **English** as the Hoval Connect language. This only changes Hoval Connect entity names and program labels; it does not change the global Home Assistant language.
