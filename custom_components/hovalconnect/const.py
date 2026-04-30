@@ -22,9 +22,13 @@ CONF_PLANT_ID = "plant_id"
 CONF_EMAIL = "email"
 CONF_PASSWORD = "password"
 CONF_STORE_PASSWORD = "store_password"
+CONF_LANGUAGE = "language"
 CONF_TOKEN_ISSUED_AT = "token_issued_at"
 CONF_TOKEN_EXPIRES_AT = "token_expires_at"
 CONF_TOKEN_RENEW_AFTER = "token_renew_after"
+LANGUAGE_SYSTEM = "system"
+LANGUAGE_DE = "de"
+LANGUAGE_EN = "en"
 UPDATE_INTERVAL_SECONDS = 30
 TEMP_DURATION_DEFAULT = "fourHours"
 

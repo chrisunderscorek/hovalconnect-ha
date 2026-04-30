@@ -3,7 +3,8 @@ from __future__ import annotations
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
 from homeassistant.const import UnitOfTemperature
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from .const import DOMAIN, MANUFACTURER
+from .const import DOMAIN
+from .localization import apply_entity_name, device_info
 
 # Live value sensor definitions per circuit type
 # Format: (key, translation_key, unit, device_class, state_class)
@@ -16,8 +17,10 @@ LIVE_SENSORS = {
         ("outsideTemperature", "outside_temperature", UnitOfTemperature.CELSIUS, SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT),
     ],
     "BL": [
+        ("status",               "bl_status",                None,                      None,                          None),
         ("tempActual",           "generator_temp_actual",    UnitOfTemperature.CELSIUS, SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT),
         ("tempTarget",           "generator_temp_target",    UnitOfTemperature.CELSIUS, SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT),
+        ("returnTemperature",    "return_temperature",       UnitOfTemperature.CELSIUS, SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT),
         ("modulation",           "modulation",               "%",                       None,                          SensorStateClass.MEASUREMENT),
         ("operatingHours",       "operating_hours",          "h",                       None,                          SensorStateClass.TOTAL_INCREASING),
         ("operationCycles",      "operation_cycles",         None,                      None,                          SensorStateClass.TOTAL_INCREASING),
@@ -25,8 +28,9 @@ LIVE_SENSORS = {
         ("faStatus",             "error_code",               None,                      None,                          None),
     ],
     "WW": [
-        ("tempSf1Actual", "storage_temp_actual", UnitOfTemperature.CELSIUS, SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT),
         ("tempTarget",    "hot_water_temp_target", UnitOfTemperature.CELSIUS, SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT),
+        ("tempSf1Actual", "ww_temp_sf1_actual",    UnitOfTemperature.CELSIUS, SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT),
+        ("tempSf2Actual", "ww_temp_sf2_actual",    UnitOfTemperature.CELSIUS, SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT),
     ],
 }
 
@@ -48,23 +52,23 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
         # Status sensor
         if c.get("circuitStatus") is not None:
-            entities.append(HovalStatusSensor(coordinator, plant_id, path, ctype))
+            entities.append(HovalStatusSensor(coordinator, entry, plant_id, path, ctype))
 
         # Program sensor
         if c.get("activeProgram") is not None:
-            entities.append(HovalProgramSensor(coordinator, plant_id, path, ctype))
+            entities.append(HovalProgramSensor(coordinator, entry, plant_id, path, ctype))
 
         # Temperature sensors from circuit data
         if c.get("actualValue") is not None:
-            entities.append(HovalCircuitTempSensor(coordinator, plant_id, path, ctype, "actualValue"))
+            entities.append(HovalCircuitTempSensor(coordinator, entry, plant_id, path, ctype, "actualValue"))
         # Hot water: skip targetValue here – already provided by live values
         if c.get("selectable") and c.get("targetValue") is not None and ctype != "WW":
-            entities.append(HovalCircuitTempSensor(coordinator, plant_id, path, ctype, "targetValue"))
+            entities.append(HovalCircuitTempSensor(coordinator, entry, plant_id, path, ctype, "targetValue"))
 
         # Live value sensors (modulation, temperatures, operating hours etc.)
         for key, translation_key, unit, dev_class, state_class in LIVE_SENSORS.get(ctype, []):
             entities.append(HovalLiveSensor(
-                coordinator, plant_id, path, ctype,
+                coordinator, entry, plant_id, path, ctype,
                 key, translation_key, unit, dev_class, state_class
             ))
 
@@ -77,13 +81,13 @@ class HovalCircuitTempSensor(CoordinatorEntity, SensorEntity):
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, plant_id, path, ctype, key):
+    def __init__(self, coordinator, entry, plant_id, path, ctype, key):
         super().__init__(coordinator)
         self._plant_id = plant_id
         self._path = path
         self._key = key
         self._attr_unique_id = f"hoval_{plant_id}_{path}_{key}"
-        self._attr_translation_key = f"{ctype.lower()}_{CIRCUIT_TEMP_KEYS.get(key, key)}"
+        apply_entity_name(self, entry, f"{ctype.lower()}_{CIRCUIT_TEMP_KEYS.get(key, key)}")
 
     @property
     def native_value(self):
@@ -93,19 +97,19 @@ class HovalCircuitTempSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {"identifiers": {(DOMAIN, self._plant_id)}, "name": "Hoval Belaria Compact IR", "manufacturer": MANUFACTURER}
+        return device_info(self.coordinator, self._plant_id)
 
 
 class HovalLiveSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, plant_id, path, ctype, key, translation_key, unit, dev_class, state_class):
+    def __init__(self, coordinator, entry, plant_id, path, ctype, key, translation_key, unit, dev_class, state_class):
         super().__init__(coordinator)
         self._plant_id = plant_id
         self._path = path
         self._key = key
         self._attr_unique_id = f"hoval_{plant_id}_{path}_{key}"
-        self._attr_translation_key = translation_key
+        apply_entity_name(self, entry, translation_key)
         self._attr_native_unit_of_measurement = unit
         self._attr_device_class = dev_class
         self._attr_state_class = state_class
@@ -122,18 +126,18 @@ class HovalLiveSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {"identifiers": {(DOMAIN, self._plant_id)}, "name": "Hoval Belaria Compact IR", "manufacturer": MANUFACTURER}
+        return device_info(self.coordinator, self._plant_id)
 
 
 class HovalStatusSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, plant_id, path, ctype):
+    def __init__(self, coordinator, entry, plant_id, path, ctype):
         super().__init__(coordinator)
         self._plant_id = plant_id
         self._path = path
         self._attr_unique_id = f"hoval_{plant_id}_{path}_status"
-        self._attr_translation_key = f"{ctype.lower()}_status"
+        apply_entity_name(self, entry, f"{ctype.lower()}_status")
 
     def _c(self):
         for c in self.coordinator.data.get("circuits", []):
@@ -151,18 +155,18 @@ class HovalStatusSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {"identifiers": {(DOMAIN, self._plant_id)}, "name": "Hoval Belaria Compact IR", "manufacturer": MANUFACTURER}
+        return device_info(self.coordinator, self._plant_id)
 
 
 class HovalProgramSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, plant_id, path, ctype):
+    def __init__(self, coordinator, entry, plant_id, path, ctype):
         super().__init__(coordinator)
         self._plant_id = plant_id
         self._path = path
         self._attr_unique_id = f"hoval_{plant_id}_{path}_active_program"
-        self._attr_translation_key = f"{ctype.lower()}_active_program"
+        apply_entity_name(self, entry, f"{ctype.lower()}_active_program")
 
     def _c(self):
         for c in self.coordinator.data.get("circuits", []):
@@ -183,4 +187,4 @@ class HovalProgramSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {"identifiers": {(DOMAIN, self._plant_id)}, "name": "Hoval Belaria Compact IR", "manufacturer": MANUFACTURER}
+        return device_info(self.coordinator, self._plant_id)

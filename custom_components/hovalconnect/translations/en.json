@@ -7,7 +7,8 @@
         "data": {
           "email": "Email",
           "password": "Password",
-          "store_password": "Store email and password permanently"
+          "store_password": "Store email and password permanently",
+          "language": "Integration language"
         }
       },
       "plant": {
@@ -36,73 +37,98 @@
       "reauth_successful": "Re-authentication successful."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Hoval Connect options",
+        "data": {
+          "language": "Integration language"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "hk_circuit_temp_actual": {
-        "name": "Heating Circuit Temperature"
+        "name": "Room temperature actual"
       },
       "hk_circuit_temp_target": {
-        "name": "Heating Circuit Target Temperature"
+        "name": "Room temperature set"
       },
       "ww_circuit_temp_actual": {
-        "name": "Hot Water Temperature"
+        "name": "Actual temperature SF1"
       },
       "flow_temp_actual": {
-        "name": "Flow Temperature"
+        "name": "Flow temperature actual"
       },
       "flow_temp_target": {
-        "name": "Flow Temperature Target"
+        "name": "Flow temperature set"
       },
       "room_temp_actual": {
-        "name": "Room Temperature"
+        "name": "Room temperature actual"
       },
       "room_temp_target": {
-        "name": "Room Temperature Target"
+        "name": "Room temperature set"
       },
       "outside_temperature": {
-        "name": "Outside Temperature"
+        "name": "Outdoor temperature"
       },
       "generator_temp_actual": {
-        "name": "Generator Flow Temperature"
+        "name": "Heat generator actual"
       },
       "generator_temp_target": {
-        "name": "Generator Flow Temperature Target"
+        "name": "Heat generator set"
+      },
+      "return_temperature": {
+        "name": "Return temperature"
       },
       "modulation": {
         "name": "Modulation"
       },
       "operating_hours": {
-        "name": "Operating Hours"
+        "name": "Operating hours"
       },
       "operation_cycles": {
-        "name": "Switching Cycles"
+        "name": "Switching cycles"
       },
       "operating_hours_over_50": {
-        "name": "Operating Hours Above 50%"
+        "name": "Operating hours > 50%"
       },
       "error_code": {
-        "name": "Error Code"
+        "name": "Error code"
       },
       "storage_temp_actual": {
-        "name": "Storage Temperature"
+        "name": "Actual temperature SF1"
+      },
+      "ww_temp_sf1_actual": {
+        "name": "Actual temperature SF1"
+      },
+      "ww_temp_sf2_actual": {
+        "name": "Actual temperature SF2"
       },
       "hot_water_temp_target": {
-        "name": "Hot Water Target Temperature"
+        "name": "Setpoint temperature"
+      },
+      "heat_amount": {
+        "name": "Heat amount"
+      },
+      "total_electrical_energy": {
+        "name": "Total electrical energy"
       },
       "hk_status": {
-        "name": "Heating Circuit Status"
+        "name": "Status"
       },
       "ww_status": {
-        "name": "Hot Water Status"
+        "name": "Status"
       },
       "bl_status": {
-        "name": "Generator Status"
+        "name": "Status heat generator"
       },
       "hk_active_program": {
-        "name": "Heating Circuit Program"
+        "name": "Active program"
       },
       "ww_active_program": {
-        "name": "Hot Water Program"
+        "name": "Active program"
       }
     }
   }

@@ -4,7 +4,7 @@
       "user": {
         "title": "Hoval Connect",
         "description": "Mit deinem HovalConnect Konto anmelden. E-Mail und Passwort werden nur gespeichert, wenn die Option zum dauerhaften Speichern aktiviert ist.",
-        "data": {"email": "E-Mail", "password": "Passwort", "store_password": "E-Mail und Passwort dauerhaft speichern"}
+        "data": {"email": "E-Mail", "password": "Passwort", "store_password": "E-Mail und Passwort dauerhaft speichern", "language": "Sprache der Integration"}
       },
       "plant": {
         "title": "Anlage auswählen",
@@ -19,27 +19,45 @@
     "error": {"cannot_connect": "Verbindung fehlgeschlagen.", "invalid_auth": "Anmeldung fehlgeschlagen. Bitte Zugangsdaten prüfen."},
     "abort": {"no_plants": "Keine Anlagen gefunden.", "already_configured": "Bereits konfiguriert.", "reauth_successful": "Erfolgreich neu authentifiziert."}
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Hoval Connect Optionen",
+        "data": {"language": "Sprache der Integration"}
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "circuit_status":           {"name": "Status"},
       "active_program":           {"name": "Aktives Programm"},
-      "hk_circuit_temp_actual":   {"name": "Heizkreis Temperatur"},
-      "hk_circuit_temp_target":   {"name": "Heizkreis Solltemperatur"},
-      "ww_circuit_temp_actual":   {"name": "Warmwasser Temperatur"},
-      "flow_temp_actual":         {"name": "Vorlauf Ist"},
-      "flow_temp_target":         {"name": "Vorlauf Soll"},
+      "hk_circuit_temp_actual":   {"name": "Raumtemperatur Ist"},
+      "hk_circuit_temp_target":   {"name": "Raumtemperatur Soll"},
+      "ww_circuit_temp_actual":   {"name": "Ist-Temperatur SF1"},
+      "flow_temp_actual":         {"name": "Vorlauftemperatur Ist"},
+      "flow_temp_target":         {"name": "Vorlauftemperatur Soll"},
       "room_temp_actual":         {"name": "Raumtemperatur Ist"},
       "room_temp_target":         {"name": "Raumtemperatur Soll"},
       "outside_temperature":      {"name": "Außentemperatur"},
-      "generator_temp_actual":    {"name": "Wärmeerzeuger Vorlauf Ist"},
-      "generator_temp_target":    {"name": "Wärmeerzeuger Vorlauf Soll"},
+      "generator_temp_actual":    {"name": "Wärmeerzeuger-Ist"},
+      "generator_temp_target":    {"name": "Wärmeerzeuger Soll"},
+      "return_temperature":       {"name": "Rücklauftemperatur"},
       "modulation":               {"name": "Modulation"},
       "operating_hours":          {"name": "Betriebsstunden"},
       "operation_cycles":         {"name": "Schaltzyklen"},
-      "operating_hours_over_50":  {"name": "Betriebsstunden über 50%"},
+      "operating_hours_over_50":  {"name": "Betriebsstunden > 50%"},
       "error_code":               {"name": "Fehlercode"},
-      "storage_temp_actual":      {"name": "Speichertemperatur"},
-      "hot_water_temp_target":    {"name": "Warmwasser Solltemperatur"}
+      "storage_temp_actual":      {"name": "Ist-Temperatur SF1"},
+      "ww_temp_sf1_actual":       {"name": "Ist-Temperatur SF1"},
+      "ww_temp_sf2_actual":       {"name": "Ist-Temperatur SF2"},
+      "hot_water_temp_target":    {"name": "Soll-Temperatur"},
+      "heat_amount":              {"name": "Wärmemenge Heizen"},
+      "total_electrical_energy":  {"name": "Elektrische Gesamtenergie"},
+      "hk_status":                {"name": "Status"},
+      "ww_status":                {"name": "Status"},
+      "bl_status":                {"name": "Status Wärmeerzeuger"},
+      "hk_active_program":        {"name": "Aktives Programm"},
+      "ww_active_program":        {"name": "Aktives Programm"}
     }
   }
 }

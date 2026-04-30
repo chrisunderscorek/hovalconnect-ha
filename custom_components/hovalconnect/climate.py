@@ -4,7 +4,8 @@ import logging
 from homeassistant.components.climate import ClimateEntity, ClimateEntityFeature, HVACAction, HVACMode
 from homeassistant.const import UnitOfTemperature
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from .const import DOMAIN, MANUFACTURER, TEMP_DURATION_DEFAULT
+from .const import DOMAIN, TEMP_DURATION_DEFAULT
+from .localization import device_info
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,9 +87,4 @@ class HovalCircuitClimate(CoordinatorEntity, ClimateEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._plant_id)},
-            "name": "Hoval Belaria Compact IR",
-            "manufacturer": MANUFACTURER,
-            "model": "Belaria Compact IR",
-        }
+        return device_info(self.coordinator, self._plant_id)
