@@ -10,6 +10,11 @@
 - Rename the former error-code live sensor to operating status while leaving value mapping for a later release.
 - Avoid duplicate target/actual temperature sensors when the same HK/WW values are already exposed from live values.
 
+### Tooling
+
+- Add helper scripts for local GHCR pretest image builds, config-only pretest pushes, and HAOS app update checks.
+- Add German and English tools documentation with path-neutral examples.
+
 ## [0.0.7] – 2026-04-30
 
 ### Localization
