@@ -50,28 +50,28 @@
   "entity": {
     "sensor": {
       "hk_circuit_temp_actual": {
-        "name": "Raumtemperatur Ist"
+        "name": "Raumtemp. Ist"
       },
       "hk_circuit_temp_target": {
-        "name": "Raumtemperatur Soll"
+        "name": "Raumtemp. Soll"
       },
       "ww_circuit_temp_actual": {
-        "name": "Ist-Temperatur SF1"
+        "name": "Ist-Temp. WW"
       },
       "flow_temp_actual": {
-        "name": "Vorlauftemperatur Ist"
+        "name": "Vorlauftemp. Ist"
       },
       "flow_temp_target": {
-        "name": "Vorlauftemperatur Soll"
+        "name": "Vorlauftemp. Soll"
       },
       "room_temp_actual": {
-        "name": "Raumtemperatur Ist"
+        "name": "Raumtemp. Ist"
       },
       "room_temp_target": {
-        "name": "Raumtemperatur Soll"
+        "name": "Raumtemp. Soll"
       },
       "outside_temperature": {
-        "name": "Außentemperatur"
+        "name": "Außentemp."
       },
       "generator_temp_actual": {
         "name": "Wärmeerzeuger-Ist"
@@ -80,7 +80,7 @@
         "name": "Wärmeerzeuger Soll"
       },
       "return_temperature": {
-        "name": "Rücklauftemperatur"
+        "name": "Rücklauftemp."
       },
       "modulation": {
         "name": "Modulation"
@@ -95,19 +95,22 @@
         "name": "Betriebsstunden > 50%"
       },
       "error_code": {
-        "name": "Fehlercode"
+        "name": "Betriebsstatus"
+      },
+      "plant_status": {
+        "name": "Betriebsstatus"
       },
       "storage_temp_actual": {
-        "name": "Ist-Temperatur SF1"
+        "name": "Ist-Temp. WW"
       },
       "ww_temp_sf1_actual": {
-        "name": "Ist-Temperatur SF1"
+        "name": "Ist-Temp. SF1"
       },
       "ww_temp_sf2_actual": {
-        "name": "Ist-Temperatur SF2"
+        "name": "Ist-Temp. SF2"
       },
       "hot_water_temp_target": {
-        "name": "Soll-Temperatur"
+        "name": "Soll-Temp."
       },
       "heat_amount": {
         "name": "Wärmemenge Heizen"
@@ -116,19 +119,19 @@
         "name": "Elektrische Gesamtenergie"
       },
       "hk_status": {
-        "name": "Status"
+        "name": "Status Heizkreis"
       },
       "ww_status": {
-        "name": "Status"
+        "name": "Status Warmwasser"
       },
       "bl_status": {
         "name": "Status Wärmeerzeuger"
       },
       "hk_active_program": {
-        "name": "Aktives Programm"
+        "name": "Akt. Heizkreisprog."
       },
       "ww_active_program": {
-        "name": "Aktives Programm"
+        "name": "Akt. Warmwasserprog."
       }
     }
   }

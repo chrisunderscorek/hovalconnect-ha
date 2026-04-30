@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.8] – 2026-04-30
+
+### Localization
+
+- Use context-specific names for heating circuit, hot water, and heat generator status sensors.
+- Localize circuit status values such as `heating` and `off` for German/English integration languages.
+- Show the active week/day prog. names instead of raw API keys such as `week1` and `week2`.
+- Rename the former error-code live sensor to operating status while leaving value mapping for a later release.
+- Avoid duplicate target/actual temperature sensors when the same HK/WW values are already exposed from live values.
+
 ## [0.0.7] – 2026-04-30
 
 ### Localization

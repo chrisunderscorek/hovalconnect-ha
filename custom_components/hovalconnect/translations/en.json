@@ -50,28 +50,28 @@
   "entity": {
     "sensor": {
       "hk_circuit_temp_actual": {
-        "name": "Room temperature actual"
+        "name": "Room temp. actual"
       },
       "hk_circuit_temp_target": {
-        "name": "Room temperature set"
+        "name": "Room temp. set"
       },
       "ww_circuit_temp_actual": {
-        "name": "Actual temperature SF1"
+        "name": "Hot water temp. actual"
       },
       "flow_temp_actual": {
-        "name": "Flow temperature actual"
+        "name": "Flow temp. actual"
       },
       "flow_temp_target": {
-        "name": "Flow temperature set"
+        "name": "Flow temp. set"
       },
       "room_temp_actual": {
-        "name": "Room temperature actual"
+        "name": "Room temp. actual"
       },
       "room_temp_target": {
-        "name": "Room temperature set"
+        "name": "Room temp. set"
       },
       "outside_temperature": {
-        "name": "Outdoor temperature"
+        "name": "Outdoor temp."
       },
       "generator_temp_actual": {
         "name": "Heat generator actual"
@@ -80,7 +80,7 @@
         "name": "Heat generator set"
       },
       "return_temperature": {
-        "name": "Return temperature"
+        "name": "Return temp."
       },
       "modulation": {
         "name": "Modulation"
@@ -95,19 +95,22 @@
         "name": "Operating hours > 50%"
       },
       "error_code": {
-        "name": "Error code"
+        "name": "Operating status"
+      },
+      "plant_status": {
+        "name": "Operating status"
       },
       "storage_temp_actual": {
-        "name": "Actual temperature SF1"
+        "name": "Hot water temp. actual"
       },
       "ww_temp_sf1_actual": {
-        "name": "Actual temperature SF1"
+        "name": "Actual temp. SF1"
       },
       "ww_temp_sf2_actual": {
-        "name": "Actual temperature SF2"
+        "name": "Actual temp. SF2"
       },
       "hot_water_temp_target": {
-        "name": "Setpoint temperature"
+        "name": "Setpoint temp."
       },
       "heat_amount": {
         "name": "Heat amount"
@@ -116,19 +119,19 @@
         "name": "Total electrical energy"
       },
       "hk_status": {
-        "name": "Status"
+        "name": "Heating circuit status"
       },
       "ww_status": {
-        "name": "Status"
+        "name": "Hot water status"
       },
       "bl_status": {
-        "name": "Status heat generator"
+        "name": "Heat generator status"
       },
       "hk_active_program": {
-        "name": "Active program"
+        "name": "Heating circuit prog."
       },
       "ww_active_program": {
-        "name": "Active program"
+        "name": "Hot water prog."
       }
     }
   }
