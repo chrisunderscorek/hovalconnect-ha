@@ -1,5 +1,5 @@
 name: Hoval Connect
-version: "0.0.6"
+version: "0.0.7"
 slug: hovalconnect
 description: Installs the Hoval Connect custom integration into Home Assistant
 url: https://github.com/chrisunderscorek/hovalconnect-ha/tree/main/hovalconnect
