@@ -113,10 +113,10 @@
         "name": "Setpoint temp."
       },
       "heat_amount": {
-        "name": "Heat amount"
+        "name": "Heat output energy"
       },
       "total_electrical_energy": {
-        "name": "Total electrical energy"
+        "name": "Inverter energy use"
       },
       "hk_status": {
         "name": "Heating circuit status"

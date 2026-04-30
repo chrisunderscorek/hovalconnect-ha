@@ -113,10 +113,10 @@
         "name": "Soll-Temp."
       },
       "heat_amount": {
-        "name": "Wärmemenge Heizen"
+        "name": "Wärmeabgabe"
       },
       "total_electrical_energy": {
-        "name": "Elektrische Gesamtenergie"
+        "name": "Stromverbrauch Inverter"
       },
       "hk_status": {
         "name": "Status Heizkreis"

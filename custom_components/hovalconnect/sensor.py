@@ -1,18 +1,26 @@
 """Hoval Connect Sensor entities."""
 from __future__ import annotations
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import UnitOfEnergy, UnitOfTemperature
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from .localization import (
     active_program_value,
     apply_entity_name,
     device_info,
+    localized_operating_status_value,
     localized_status_value,
 )
 
 API_TREE_CIRCUITS = "GET /v3/plants/{plant_id}/circuits"
 API_TREE_LIVE_VALUES = "GET /v3/api/statistics/live-values/{plant_id}"
+API_TREE_BUSINESS_CIRCUIT_DETAIL = "GET /v2/business/plants/{plant_id}/circuits/{path}"
+WFA_OPERATING_STATUS_SUFFIX = ".2053"
+ENERGY_MWH_TO_KWH_KEYS = {"heatAmount", "totalEnergy"}
+ENERGY_WFA_PARAMETERS = {
+    "heatAmount": "01-048 Energiemenge total kWh",
+    "totalEnergy": "01-027 Aufgenommene el. Energie kWh",
+}
 
 # Source: API_TREE_LIVE_VALUES.
 # These keys are returned as live-value rows for a specific circuitPath and
@@ -36,6 +44,8 @@ LIVE_SENSORS = {
         ("operatingHours",       "operating_hours",          "h",                       None,                          SensorStateClass.TOTAL_INCREASING),
         ("operationCycles",      "operation_cycles",         None,                      None,                          SensorStateClass.TOTAL_INCREASING),
         ("operatingHoursOver50", "operating_hours_over_50",  "h",                       None,                          SensorStateClass.TOTAL_INCREASING),
+        ("heatAmount",           "heat_amount",              UnitOfEnergy.KILO_WATT_HOUR, SensorDeviceClass.ENERGY,    SensorStateClass.TOTAL_INCREASING),
+        ("totalEnergy",          "total_electrical_energy",  UnitOfEnergy.KILO_WATT_HOUR, SensorDeviceClass.ENERGY,    SensorStateClass.TOTAL_INCREASING),
         ("faStatus",             "plant_status",             None,                      None,                          None),
     ],
     "WW": [
@@ -52,6 +62,14 @@ CIRCUIT_TEMP_KEYS = {
     "actualValue": "circuit_temp_actual",
     "targetValue": "circuit_temp_target",
 }
+
+def _coerce_number(value):
+    if value is None:
+        return None
+    try:
+        return float(value) if "." in str(value) else int(value)
+    except (ValueError, TypeError):
+        return value
 
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
@@ -137,26 +155,75 @@ class HovalLiveSensor(CoordinatorEntity, SensorEntity):
         self._attr_device_class = dev_class
         self._attr_state_class = state_class
 
+    def _live_value(self):
+        return self.coordinator.data.get("live_values", {}).get(self._path, {}).get(self._key)
+
+    def _business_detail(self):
+        return self.coordinator.data.get("business_details", {}).get(self._path, {})
+
+    def _business_value(self, suffix: str):
+        target_path = f"{self._path}{suffix}"
+        for item in self._business_detail().get("values", []):
+            if item.get("path") == target_path:
+                return item.get("value")
+        return None
+
+    def _operating_status_source(self):
+        live_value = self._live_value()
+        if live_value is not None:
+            return live_value, self._api_tree
+
+        # WFA-200 Betriebsstatus is datapoint *.2053 in the read-only business
+        # circuit detail tree. The official API sometimes exposes this via
+        # live-values as faStatus, but older responses omit it.
+        business_value = self._business_value(WFA_OPERATING_STATUS_SUFFIX)
+        if business_value is not None:
+            return business_value, API_TREE_BUSINESS_CIRCUIT_DETAIL
+
+        detail_status = self._business_detail().get("status")
+        if detail_status is not None:
+            return detail_status, API_TREE_BUSINESS_CIRCUIT_DETAIL
+        return None, self._api_tree
+
     @property
     def native_value(self):
-        val = self.coordinator.data.get("live_values", {}).get(self._path, {}).get(self._key)
+        val = self._live_value()
+        if self._key == "faStatus":
+            val, _source = self._operating_status_source()
+            return localized_operating_status_value(self._entry, val, self._hass_language)
         if val is None:
             return None
         if self._key == "status":
             return localized_status_value(self._entry, val, self._hass_language)
-        try:
-            return float(val) if "." in str(val) else int(val)
-        except (ValueError, TypeError):
-            return val
+        number = _coerce_number(val)
+        if self._key in ENERGY_MWH_TO_KWH_KEYS and isinstance(number, (int, float)):
+            return round(float(number) * 1000, 3)
+        return number
 
     @property
     def extra_state_attributes(self):
-        if self._key != "status":
-            return None
-        return {
-            "raw_status": self.coordinator.data.get("live_values", {}).get(self._path, {}).get(self._key),
-            "api_tree": self._api_tree,
-        }
+        if self._key == "faStatus":
+            raw_status, source = self._operating_status_source()
+            return {
+                "raw_status": raw_status,
+                "api_tree": source,
+                "wfa_reference": "4. Betriebszustände WFA-200",
+                "business_datapoint": f"{self._path}{WFA_OPERATING_STATUS_SUFFIX}",
+            }
+        if self._key == "status":
+            return {
+                "raw_status": self._live_value(),
+                "api_tree": self._api_tree,
+            }
+        if self._key in ENERGY_MWH_TO_KWH_KEYS:
+            return {
+                "raw_value": self._live_value(),
+                "raw_unit": "MWh",
+                "api_tree": self._api_tree,
+                "unit_conversion": "MWh to kWh",
+                "wfa_parameter": ENERGY_WFA_PARAMETERS.get(self._key),
+            }
+        return None
 
     @property
     def device_info(self):

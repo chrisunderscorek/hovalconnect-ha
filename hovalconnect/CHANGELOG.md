@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.9] - 2026-05-01
+
+### Energy
+
+- Add heat output and inverter energy sensors in `kWh` from the BL live-values `heatAmount` and `totalEnergy`.
+- Convert the cloud energy values from inferred `MWh` to Home Assistant `kWh` and expose the raw value/unit as attributes.
+
+### Status
+
+- Map WFA-200 numeric operating status codes, including `0` to `WP aus` / `Heat pump off`.
+- Use the read-only business circuit detail datapoint `*.2053` as fallback when `faStatus` is missing from live values.
+
 ## [0.0.8] - 2026-04-30
 
 ### Localization

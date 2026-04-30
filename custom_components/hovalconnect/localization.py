@@ -45,8 +45,8 @@ ENTITY_NAMES: dict[str, dict[str, str]] = {
         "ww_temp_sf1_actual": "Ist-Temp. SF1",
         "ww_temp_sf2_actual": "Ist-Temp. SF2",
         "hot_water_temp_target": "Soll-Temp.",
-        "heat_amount": "Wärmemenge Heizen",
-        "total_electrical_energy": "Elektrische Gesamtenergie",
+        "heat_amount": "Wärmeabgabe",
+        "total_electrical_energy": "Stromverbrauch Inverter",
         "hk_status": "Status Heizkreis",
         "ww_status": "Status Warmwasser",
         "bl_status": "Status Wärmeerzeuger",
@@ -75,8 +75,8 @@ ENTITY_NAMES: dict[str, dict[str, str]] = {
         "ww_temp_sf1_actual": "Actual temp. SF1",
         "ww_temp_sf2_actual": "Actual temp. SF2",
         "hot_water_temp_target": "Setpoint temp.",
-        "heat_amount": "Heat amount",
-        "total_electrical_energy": "Total electrical energy",
+        "heat_amount": "Heat output energy",
+        "total_electrical_energy": "Inverter energy use",
         "hk_status": "Heating circuit status",
         "ww_status": "Hot water status",
         "bl_status": "Heat generator status",
@@ -122,6 +122,82 @@ STATUS_VALUES = {
         "standby": "Standby",
         "error": "Error",
     },
+}
+
+OPERATING_STATUS_VALUES = {
+    LANGUAGE_DE: {
+        0: "WP aus",
+        1: "Heizen mit WP",
+        2: "Aktivkühlen",
+        3: "Sperre (Bivalenz, WW, usw.)",
+        4: "Warmwasser mit WP",
+        5: "WP-Frostschutz",
+        6: "WP-Temp. zu tief",
+        7: "WP-Vorlauf zu hoch",
+        8: "Abtauen",
+        9: "Passivkühlen",
+        11: "HD-Störung (Sensor oder Schalter)",
+        12: "Niederdruckstörung",
+        16: "Wiedereinschaltverzögerung",
+        17: "EW-/Energieerz.-Sperre",
+        18: "Vorlaufzeit Primär",
+        19: "Nachlaufzeit Primär",
+        44: "MOP",
+        49: "Erfolglose Abtauung",
+        51: "Vorlaufzeit Kondenserpumpe",
+        55: "Störung Inverter/Modbus-Kommunikation",
+        72: "Grundwasser Frostschutz",
+        73: "Durchfluss WQ/GW-Kreis",
+        77: "Begrenzung Verdichter",
+        97: "Kompressoröl vorheizen",
+        98: "Kaltstart",
+        99: "Maschine nicht konfiguriert",
+    },
+    LANGUAGE_EN: {
+        0: "Heat pump off",
+        1: "Heating with heat pump",
+        2: "Active cooling",
+        3: "Lockout (bivalence, hot water, etc.)",
+        4: "Hot water with heat pump",
+        5: "Heat pump frost protection",
+        6: "Heat pump temp. too low",
+        7: "Heat pump flow too high",
+        8: "Defrosting",
+        9: "Passive cooling",
+        11: "High-pressure fault (sensor or switch)",
+        12: "Low-pressure fault",
+        16: "Restart delay",
+        17: "Heat generator lockout",
+        18: "Primary lead time",
+        19: "Primary overrun time",
+        44: "MOP",
+        49: "Failed defrost",
+        51: "Condenser pump lead time",
+        55: "Inverter/Modbus communication fault",
+        72: "Groundwater frost protection",
+        73: "Heat source/groundwater flow",
+        77: "Compressor limitation",
+        97: "Compressor oil preheating",
+        98: "Cold start",
+        99: "Machine not configured",
+    },
+}
+
+OPERATING_STATUS_ALIASES = {
+    "off": 0,
+    "wp aus": 0,
+    "wp_aus": 0,
+    "heat pump off": 0,
+    "heating": 1,
+    "heizen": 1,
+    "heating_with_heat_pump": 1,
+    "warmwasser": 4,
+    "hot_water": 4,
+    "hot water": 4,
+    "charging": 4,
+    "defrost": 8,
+    "defrosting": 8,
+    "abtauen": 8,
 }
 
 
@@ -196,6 +272,34 @@ def localized_status_value(
     if not status_key:
         return None
     return STATUS_VALUES[effective_language(entry, hass_language)].get(status_key, raw_status)
+
+
+def localized_operating_status_value(
+    entry: ConfigEntry,
+    raw_status,
+    hass_language: str | None = None,
+) -> str | None:
+    """Return the localized WFA-200 operating status for numeric status codes."""
+    if raw_status is None:
+        return None
+
+    raw_text = str(raw_status).strip()
+    if not raw_text:
+        return None
+
+    status_code = None
+    try:
+        status_float = float(raw_text)
+        if status_float.is_integer():
+            status_code = int(status_float)
+    except ValueError:
+        alias_key = raw_text.strip().lower().replace("-", "_")
+        status_code = OPERATING_STATUS_ALIASES.get(alias_key)
+
+    if status_code is None:
+        return raw_status
+
+    return OPERATING_STATUS_VALUES[effective_language(entry, hass_language)].get(status_code, raw_status)
 
 
 def program_select_suffix(entry: ConfigEntry, hass_language: str | None = None) -> str:

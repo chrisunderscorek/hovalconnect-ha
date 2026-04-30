@@ -1,6 +1,6 @@
 # Hoval Connect – Home Assistant Integration
 
-[![Version](https://img.shields.io/badge/version-0.0.8-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
+[![Version](https://img.shields.io/badge/version-0.0.9-blue)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -31,9 +31,11 @@ All devices compatible with the **HovalConnect App** (iOS/Android), e.g.:
 | `sensor.hoval_modulation` | Sensor | Compressor modulation (%) |
 | `sensor.hoval_operating_hours` | Sensor | Total operating hours |
 | `sensor.hoval_operation_cycles` | Sensor | Total switching cycles |
+| `sensor.hoval_heat_output_energy` | Sensor | Heat output energy in kWh |
+| `sensor.hoval_inverter_energy_use` | Sensor | Inverter energy consumption in kWh |
 | `sensor.hoval_actual_temperature_sf1` | Sensor | Hot water actual temp. SF1 |
 | `sensor.hoval_actual_temperature_sf2` | Sensor | Hot water actual temp. SF2 |
-| `sensor.hoval_*_status` | Sensor | Operating status (heating/charging/off) |
+| `sensor.hoval_*_status` | Sensor | Circuit and WFA-200 operating status |
 | `sensor.hoval_*_active_program` | Sensor | Active week/day prog. names |
 
 ### Control Logic
@@ -128,9 +130,16 @@ This integration uses the unofficial HovalConnect Cloud API, reverse-engineered 
 | `GET /v1/plants/{id}/settings` | Get plant access token |
 | `GET /v3/plants/{id}/circuits` | Heating circuit data |
 | `GET /v3/api/statistics/live-values/{id}` | Live sensor values |
+| `GET /v2/business/plants/{id}/circuits/{path}` | WFA operating status fallback |
 | `POST /v3/plants/{id}/circuits/{path}/temporary-change` | Temporary temperature |
 | `PATCH /v3/plants/{id}/circuits/{path}/programs` | Permanent temperature |
 | `POST /v3/plants/{id}/circuits/{path}/programs/{program}` | Switch program |
+
+Energy counters exposed by Hoval as `heatAmount` and `totalEnergy` are converted
+from the cloud values that behave like MWh to Home Assistant `kWh` energy
+sensors. The WFA-200 documentation names the corresponding counters as kWh
+parameters, including `01-048 Energiemenge total` and `01-027 Aufgenommene el.
+Energie`.
 
 - **Auth:** OAuth2 via SAP IAS, JWT bearer for the Hoval core API
 - **Update interval:** 30 seconds

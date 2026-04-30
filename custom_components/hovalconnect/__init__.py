@@ -45,6 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             circuits = await api.get_circuits(plant_id)
             # Fetch live sensor values for each circuit
             live_values = {}
+            business_details = {}
             for c in circuits:
                 path = c.get("path", "")
                 ctype = c.get("type", "")
@@ -58,7 +59,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                             _LOGGER.debug("No live values for %s/%s", path, ctype)
                     except Exception as lv_err:
                         _LOGGER.warning("Live values error for %s/%s: %s", path, ctype, lv_err)
-            return {"circuits": circuits, "live_values": live_values, "plant_id": plant_id}
+
+                    # The WFA operating status code is not always part of the
+                    # live-values response. The read-only business detail tree
+                    # exposes the internal status datapoint (*.2053), which we
+                    # use as a fallback for the localized Betriebsstatus sensor.
+                    if ctype == "BL":
+                        try:
+                            detail = await api.get_business_circuit_detail(plant_id, path)
+                            if detail:
+                                business_details[path] = detail
+                        except Exception as detail_err:
+                            _LOGGER.warning("Business detail error for %s/%s: %s", path, ctype, detail_err)
+
+            return {
+                "circuits": circuits,
+                "live_values": live_values,
+                "business_details": business_details,
+                "plant_id": plant_id,
+            }
         except HovalAuthError as err:
             entry.async_start_reauth(hass)
             raise UpdateFailed(f"Auth expired, re-authentication required: {err}") from err

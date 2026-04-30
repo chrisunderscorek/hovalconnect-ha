@@ -16,7 +16,7 @@ permissions:
 
 env:
   IMAGE: ghcr.io/chrisunderscorek/hovalconnect-ha
-  VERSION: 0.0.8
+  VERSION: 0.0.9
 
 jobs:
   build:

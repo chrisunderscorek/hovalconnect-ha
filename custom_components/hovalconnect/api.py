@@ -11,6 +11,7 @@ import aiohttp
 
 from .const import (
     API_CIRCUITS,
+    API_BUSINESS_CIRCUIT_DETAIL,
     API_LIVE_VALUES,
     API_MY_PLANTS,
     API_PLANT_SETTINGS,
@@ -460,6 +461,16 @@ class HovalConnectAPI:
         )
         # Convert list of {key, value} to dict
         return {item["key"]: item["value"] for item in data if "key" in item}
+
+    async def get_business_circuit_detail(self, plant_id: str, circuit_path: str) -> dict:
+        """Read the business circuit detail tree for stable internal datapoints."""
+        plant_token = await self._ensure_plant_token(plant_id)
+        return await self._request_json(
+            "GET",
+            API_BUSINESS_CIRCUIT_DETAIL.format(plant_id=plant_id, path=circuit_path),
+            headers_factory=lambda: self._plant_headers(plant_token),
+            empty_statuses={404, 417, 502},
+        )
 
     async def set_temporary_change(self, plant_id: str, path: str, value: float, duration: str = "fourHours") -> None:
         """Temporary temperature change (weekly program continues)."""

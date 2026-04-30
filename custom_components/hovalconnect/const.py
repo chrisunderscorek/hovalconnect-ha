@@ -17,6 +17,7 @@ API_PLANT_SETTINGS = f"{API_BASE}/v1/plants/{{plant_id}}/settings"
 API_CIRCUITS       = f"{API_BASE}/v3/plants/{{plant_id}}/circuits?ignoreConnectionState=false"
 API_TEMP_CHANGE    = f"{API_BASE}/v3/plants/{{plant_id}}/circuits/{{path}}/temporary-change"
 API_SET_PROGRAM    = f"{API_BASE}/v3/plants/{{plant_id}}/circuits/{{path}}/programs/{{program}}"
+API_BUSINESS_CIRCUIT_DETAIL = f"{API_BASE}/v2/business/plants/{{plant_id}}/circuits/{{path}}"
 
 CONF_PLANT_ID = "plant_id"
 CONF_EMAIL = "email"
