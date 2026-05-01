@@ -17,6 +17,8 @@ API_TREE_LIVE_VALUES = "GET /v3/api/statistics/live-values/{plant_id}"
 API_TREE_BUSINESS_CIRCUIT_DETAIL = "GET /v2/business/plants/{plant_id}/circuits/{path}"
 WFA_OPERATING_STATUS_SUFFIX = ".2053"
 ENERGY_MWH_TO_KWH_KEYS = {"heatAmount", "totalEnergy"}
+MODULATION_INACTIVE_STATUSES = {"off", "standby", "idle", "waiting", "wait", "ready"}
+MODULATION_INACTIVE_OPERATING_STATUS_CODES = {0, 3, 16, 17, 18, 19}
 ENERGY_WFA_PARAMETERS = {
     "heatAmount": "01-048 Energiemenge total kWh",
     "totalEnergy": "01-027 Aufgenommene el. Energie kWh",
@@ -70,6 +72,17 @@ def _coerce_number(value):
         return float(value) if "." in str(value) else int(value)
     except (ValueError, TypeError):
         return value
+
+def _coerce_int(value):
+    if value is None:
+        return None
+    try:
+        number = float(str(value).strip())
+    except (ValueError, TypeError):
+        return None
+    if not number.is_integer():
+        return None
+    return int(number)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
@@ -154,6 +167,10 @@ class HovalLiveSensor(CoordinatorEntity, SensorEntity):
         self._attr_native_unit_of_measurement = unit
         self._attr_device_class = dev_class
         self._attr_state_class = state_class
+        if key == "modulation":
+            # Modulation is a volatile live value. Force recorder updates on
+            # every poll so short compressor behavior is visible at 30s cadence.
+            self._attr_force_update = True
 
     def _live_value(self):
         return self.coordinator.data.get("live_values", {}).get(self._path, {}).get(self._key)
@@ -169,7 +186,7 @@ class HovalLiveSensor(CoordinatorEntity, SensorEntity):
         return None
 
     def _operating_status_source(self):
-        live_value = self._live_value()
+        live_value = self.coordinator.data.get("live_values", {}).get(self._path, {}).get("faStatus")
         if live_value is not None:
             return live_value, self._api_tree
 
@@ -185,12 +202,24 @@ class HovalLiveSensor(CoordinatorEntity, SensorEntity):
             return detail_status, API_TREE_BUSINESS_CIRCUIT_DETAIL
         return None, self._api_tree
 
+    def _modulation_missing_means_zero(self):
+        live_values = self.coordinator.data.get("live_values", {}).get(self._path, {})
+        raw_status = live_values.get("status")
+        if isinstance(raw_status, str) and raw_status.strip().lower() in MODULATION_INACTIVE_STATUSES:
+            return True
+
+        raw_operating_status, _source = self._operating_status_source()
+        operating_status_code = _coerce_int(raw_operating_status)
+        return operating_status_code in MODULATION_INACTIVE_OPERATING_STATUS_CODES
+
     @property
     def native_value(self):
         val = self._live_value()
         if self._key == "faStatus":
             val, _source = self._operating_status_source()
             return localized_operating_status_value(self._entry, val, self._hass_language)
+        if self._key == "modulation" and val is None and self._modulation_missing_means_zero():
+            return 0
         if val is None:
             return None
         if self._key == "status":
@@ -214,6 +243,16 @@ class HovalLiveSensor(CoordinatorEntity, SensorEntity):
             return {
                 "raw_status": self._live_value(),
                 "api_tree": self._api_tree,
+            }
+        if self._key == "modulation" and self._live_value() is None:
+            raw_operating_status, source = self._operating_status_source()
+            return {
+                "raw_value": None,
+                "api_tree": self._api_tree,
+                "normalized_to_zero": self._modulation_missing_means_zero(),
+                "raw_status": self.coordinator.data.get("live_values", {}).get(self._path, {}).get("status"),
+                "raw_operating_status": raw_operating_status,
+                "operating_status_source": source,
             }
         if self._key in ENERGY_MWH_TO_KWH_KEYS:
             return {

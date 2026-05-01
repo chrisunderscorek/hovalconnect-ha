@@ -1,6 +1,7 @@
 """Hoval Connect API client."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 import time
@@ -25,6 +26,11 @@ from .const import (
     DEFAULT_FRONTEND_APP_VERSION,
     FRONTEND_VERSION_CHECK_INTERVAL_SECONDS,
     GOOGLE_PLAY_APP_URL,
+    REQUEST_RETRY_BACKOFF_SECONDS,
+    REQUEST_RETRY_MIN_RETRIES,
+    REQUEST_RETRY_WINDOW_SECONDS,
+    REQUEST_TIMEOUT_SECONDS,
+    RETRYABLE_HTTP_STATUS_CODES,
     TOKEN_RENEWAL_RETRY_BACKOFF_SECONDS,
     TOKEN_RENEWAL_SAFETY_MARGIN_SECONDS,
 )
@@ -145,6 +151,11 @@ class HovalConnectAPI:
         self._startup_monotonic = time.monotonic()
         self._last_frontend_version_check_slot: int | None = None
         self._last_frontend_version_skip_warning_slot: int | None = None
+        self._request_retry_window_seconds = REQUEST_RETRY_WINDOW_SECONDS
+
+    def set_request_retry_window(self, seconds: float) -> None:
+        """Set the transient request retry window, normally half the poll interval."""
+        self._request_retry_window_seconds = max(1.0, float(seconds))
 
     def _app_headers(self) -> dict:
         return {
@@ -236,20 +247,56 @@ class HovalConnectAPI:
         **kwargs,
     ):
         retry_on_426 = True
+        started = time.monotonic()
+        retries = 0
+        request_kwargs = {**kwargs}
+        request_kwargs.setdefault(
+            "timeout",
+            aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS),
+        )
         while True:
-            async with self._session.request(method, url, headers=headers_factory(), **kwargs) as resp:
-                if empty_statuses and resp.status in empty_statuses:
-                    return {}
-                if resp.status == 426 and retry_on_426:
-                    body = await resp.text()
-                    retry_on_426 = False
-                    # A 426 normally means Hoval bumped the accepted frontend
-                    # app version. Re-check the store version and retry once if
-                    # the effective header changed.
-                    if await self._handle_upgrade_required(body):
-                        continue
-                resp.raise_for_status()
-                return await resp.json(content_type=None)
+            try:
+                async with self._session.request(
+                    method,
+                    url,
+                    headers=headers_factory(),
+                    **request_kwargs,
+                ) as resp:
+                    if empty_statuses and resp.status in empty_statuses:
+                        self._log_fetch_result(method, url, started, retries)
+                        return {}
+                    if resp.status == 426 and retry_on_426:
+                        body = await resp.text()
+                        retry_on_426 = False
+                        # A 426 normally means Hoval bumped the accepted frontend
+                        # app version. Re-check the store version and retry once if
+                        # the effective header changed.
+                        if await self._handle_upgrade_required(body):
+                            continue
+                    if resp.status in RETRYABLE_HTTP_STATUS_CODES:
+                        body = await resp.text()
+                        raise aiohttp.ClientResponseError(
+                            resp.request_info,
+                            resp.history,
+                            status=resp.status,
+                            message=body[:200],
+                            headers=resp.headers,
+                        )
+                    resp.raise_for_status()
+                    data = await resp.json(content_type=None)
+                    self._log_fetch_result(method, url, started, retries)
+                    return data
+            except (aiohttp.ClientError, TimeoutError, asyncio.TimeoutError) as err:
+                if not await self._maybe_sleep_for_transient_retry(
+                    method,
+                    url,
+                    err,
+                    started,
+                    retries,
+                ):
+                    self._log_fetch_failure(method, url, started, retries, err)
+                    raise
+                retries += 1
 
     async def _request_no_json(
         self,
@@ -260,15 +307,124 @@ class HovalConnectAPI:
         **kwargs,
     ) -> None:
         retry_on_426 = True
+        started = time.monotonic()
+        retries = 0
+        request_kwargs = {**kwargs}
+        request_kwargs.setdefault(
+            "timeout",
+            aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS),
+        )
         while True:
-            async with self._session.request(method, url, headers=headers_factory(), **kwargs) as resp:
-                if resp.status == 426 and retry_on_426:
-                    body = await resp.text()
-                    retry_on_426 = False
-                    if await self._handle_upgrade_required(body):
-                        continue
-                resp.raise_for_status()
-                return
+            try:
+                async with self._session.request(
+                    method,
+                    url,
+                    headers=headers_factory(),
+                    **request_kwargs,
+                ) as resp:
+                    if resp.status == 426 and retry_on_426:
+                        body = await resp.text()
+                        retry_on_426 = False
+                        if await self._handle_upgrade_required(body):
+                            continue
+                    if resp.status in RETRYABLE_HTTP_STATUS_CODES:
+                        body = await resp.text()
+                        raise aiohttp.ClientResponseError(
+                            resp.request_info,
+                            resp.history,
+                            status=resp.status,
+                            message=body[:200],
+                            headers=resp.headers,
+                        )
+                    resp.raise_for_status()
+                    self._log_fetch_result(method, url, started, retries)
+                    return
+            except (aiohttp.ClientError, TimeoutError, asyncio.TimeoutError) as err:
+                if not await self._maybe_sleep_for_transient_retry(
+                    method,
+                    url,
+                    err,
+                    started,
+                    retries,
+                ):
+                    self._log_fetch_failure(method, url, started, retries, err)
+                    raise
+                retries += 1
+
+    def _is_retryable_request_error(self, err: Exception) -> bool:
+        if isinstance(err, aiohttp.ClientResponseError):
+            return err.status in RETRYABLE_HTTP_STATUS_CODES
+        return isinstance(err, (aiohttp.ClientError, TimeoutError, asyncio.TimeoutError))
+
+    def _transient_request_retry_delay(self, err: Exception, retries: int) -> float:
+        index = min(retries, len(REQUEST_RETRY_BACKOFF_SECONDS) - 1)
+        local_delay = float(REQUEST_RETRY_BACKOFF_SECONDS[index])
+        retry_after = _retry_after_seconds(getattr(err, "headers", None))
+        if retry_after is None:
+            return local_delay
+        return max(local_delay, retry_after)
+
+    async def _maybe_sleep_for_transient_retry(
+        self,
+        method: str,
+        url: str,
+        err: Exception,
+        started: float,
+        retries: int,
+    ) -> bool:
+        if not self._is_retryable_request_error(err):
+            return False
+
+        elapsed = time.monotonic() - started
+        should_retry = (
+            retries < REQUEST_RETRY_MIN_RETRIES
+            or elapsed < self._request_retry_window_seconds
+        )
+        if not should_retry:
+            return False
+
+        delay = self._transient_request_retry_delay(err, retries)
+        _LOGGER.warning(
+            "%s %s transient fetch error after %.0f msec, retry %d in %.1f sec: %s",
+            method,
+            url,
+            elapsed * 1000,
+            retries + 1,
+            delay,
+            err,
+        )
+        await asyncio.sleep(delay)
+        return True
+
+    def _log_fetch_result(self, method: str, url: str, started: float, retries: int) -> None:
+        elapsed_ms = (time.monotonic() - started) * 1000
+        level = logging.INFO if retries else logging.DEBUG
+        _LOGGER.log(
+            level,
+            "%s %s fetched: %.0f msec, %d retries",
+            method,
+            url,
+            elapsed_ms,
+            retries,
+        )
+
+    def _log_fetch_failure(
+        self,
+        method: str,
+        url: str,
+        started: float,
+        retries: int,
+        err: Exception,
+    ) -> None:
+        elapsed_ms = (time.monotonic() - started) * 1000
+        _LOGGER.warning(
+            "%s %s failed: %.0f msec, %d retries, error=%s",
+            method,
+            url,
+            elapsed_ms,
+            retries,
+            err,
+        )
 
     def set_token_refresh_callback(self, callback) -> None:
         """Called whenever tokens are refreshed — use to persist new tokens."""
@@ -457,7 +613,7 @@ class HovalConnectAPI:
             "GET",
             url,
             headers_factory=lambda: self._plant_headers(plant_token),
-            empty_statuses={404, 502},
+            empty_statuses={404},
         )
         # Convert list of {key, value} to dict
         return {item["key"]: item["value"] for item in data if "key" in item}
@@ -469,7 +625,7 @@ class HovalConnectAPI:
             "GET",
             API_BUSINESS_CIRCUIT_DETAIL.format(plant_id=plant_id, path=circuit_path),
             headers_factory=lambda: self._plant_headers(plant_token),
-            empty_statuses={404, 417, 502},
+            empty_statuses={404, 417},
         )
 
     async def set_temporary_change(self, plant_id: str, path: str, value: float, duration: str = "fourHours") -> None:

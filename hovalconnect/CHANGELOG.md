@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0] - 2026-05-01
+
+### Reliability
+
+- Improve resilience against short Hoval cloud outages and avoid token-refresh reloads that briefly made entities unavailable.
+- Normalize missing modulation to `0%` when the heat pump is off or waiting; see `feature_docs/HA-0001-reliable-cloud-fetches.md`.
+- Add a local recorder-history availability analysis tool.
+
 ## [0.0.9] - 2026-05-01
 
 ### Energy

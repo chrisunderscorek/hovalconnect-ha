@@ -92,3 +92,18 @@ Debug-Helper fuer Hoval OAuth/Token und API-Probing.
 
 Nur fuer lokales Debugging verwenden. Tokens oder private API-Antworten nicht
 committen.
+
+### `analyze_ha_history_availability.py`
+
+Wertet eine lokal kopierte Home-Assistant-Recorder-Datenbank aus und zaehlt
+`unavailable`-/`unknown`-Phasen fuer Hoval-Entities. Das Skript installiert
+nichts auf HAOS; die Datenbank vorher z. B. nach `localdata/` kopieren.
+
+```bash
+./tools/analyze_ha_history_availability.py \
+  ../localdata/home-assistant_v2.db \
+  --entity-like '%hoval%' \
+  --days 3 \
+  --short-threshold 10 \
+  --pretty
+```
