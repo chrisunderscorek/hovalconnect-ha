@@ -67,6 +67,12 @@ The Home Assistant app copies the bundled integration into
 `/config/custom_components/hovalconnect` and then exits. Start it again whenever
 you want to refresh the installed integration from the app image.
 
+For updates through the Home Assistant UI, the **Update** button only updates the
+app image. It does not copy the new integration files into `/config` and it does
+not reload Home Assistant Core. After every app update, start **Hoval Connect**
+once, wait for the app log line `Installed Hoval Connect integration <version>`,
+and then restart Home Assistant Core.
+
 **Via HACS (Custom Repository):**
 1. HACS → Integrations → ⋮ → Custom Repositories
 2. URL: `https://github.com/chrisunderscorek/hovalconnect-ha`

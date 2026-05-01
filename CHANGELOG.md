@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Tooling
+
+- Make HAOS app checks fail when the copied custom-component version still lags behind the installed app version.
+- Document the required manual HAOS update flow: update app image, start the one-shot app once, then restart Home Assistant Core.
+
 ## [0.2.0] – 2026-05-01
 
 ### Reliability

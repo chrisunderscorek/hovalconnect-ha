@@ -239,14 +239,7 @@ installed_app = max(installed_candidates, key=app_score) if installed_candidates
 ha_arch = ha_info.get("arch") if isinstance(ha_info, dict) else None
 supported_arch = store_app.get("arch", []) if isinstance(store_app, dict) else []
 version_latest = store_app.get("version_latest") if isinstance(store_app, dict) else None
-
-checks = {
-    "ssh_ok": not any("_parse_error" in p for p in (ha_info_payload, store_payload, apps_payload)),
-    "repository_present": repo_match is not None,
-    "store_app_visible": store_app is not None,
-    "version_matches": store_app is not None and version_latest == expected_version,
-    "host_arch_supported": store_app is not None and ha_arch in supported_arch,
-}
+installed_version = installed_app.get("version") if isinstance(installed_app, dict) else None
 
 component = {
     "path": f"/config/custom_components/{domain}",
@@ -260,6 +253,19 @@ if component["manifest"]:
 else:
     component["domain_matches"] = False
     component["version"] = None
+
+checks = {
+    "ssh_ok": not any("_parse_error" in p for p in (ha_info_payload, store_payload, apps_payload)),
+    "repository_present": repo_match is not None,
+    "store_app_visible": store_app is not None,
+    "store_version_matches": store_app is not None and version_latest == expected_version,
+    "app_installed": installed_app is not None,
+    "installed_app_version_matches": installed_version == expected_version,
+    "host_arch_supported": store_app is not None and ha_arch in supported_arch,
+    "custom_component_installed": component["installed"],
+    "custom_component_domain_matches": component["domain_matches"],
+    "custom_component_version_matches": component["version"] == expected_version,
+}
 
 result = {
     "ok": all(checks.values()),
@@ -296,6 +302,8 @@ result = {
     },
     "installed_app": {
         "present": installed_app is not None,
+        "version": installed_version,
+        "version_matches": installed_version == expected_version,
         "data": installed_app,
     },
     "custom_component": component,

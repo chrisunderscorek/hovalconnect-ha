@@ -60,26 +60,47 @@ config-only commit has been pushed.
 
 ### `update_ha_app_on_haos.sh`
 
-Reloads the HA Store, detects the app slug, updates/starts the app on HAOS, and
-prints the final check JSON.
+Reloads the HA Store, detects the app slug, updates/starts the app on HAOS,
+waits until the copied custom component reports the expected version, and prints
+the final check JSON. With `--restart-core`, it then restarts Home Assistant
+Core so the new Python code is loaded.
 
 ```bash
 ./tools/update_ha_app_on_haos.sh <ha-host> --restart-core
 ```
+
+The script exits with an error if the app version was updated but
+`/config/custom_components/hovalconnect/manifest.json` still contains an older
+version.
 
 The SSH user defaults to `root`. Use `--user <user>` when needed.
 
 ### `check_ha_app_on_haos.sh`
 
 Checks whether the repository and app are visible on HAOS and whether the custom
-integration was installed into `/config/custom_components/hovalconnect`.
+integration was installed into `/config/custom_components/hovalconnect` with the
+expected version.
 
 ```bash
 ./tools/check_ha_app_on_haos.sh <ha-host> --reload
 ```
 
 The script prints a single JSON object that can be reused as input for follow-up
-checks.
+checks. `ok` is only `true` when the store version, installed app version, and
+copied custom-component version all match.
+
+### Manual HAOS Update Flow
+
+Without SSH commands, the one-shot installer has to be started again after every
+update:
+
+1. Update **Hoval Connect** in Home Assistant.
+2. Start **Hoval Connect** once.
+3. Wait for `Installed Hoval Connect integration <version>` in the app logs.
+4. Restart Home Assistant Core.
+
+Clicking Update only updates the app image. It does not automatically copy the
+new integration to `/config/custom_components/hovalconnect`.
 
 ### `debug_hoval_auth.py`
 

@@ -22,6 +22,8 @@ Options:
   --no-reload             Do not run "ha store reload" before detection
   --skip-update           Do not run the app update command
   --skip-start            Do not run the app start command
+  --install-timeout SEC   Wait for copied integration version after start
+                          (default: 60)
   --restart-core          Restart Home Assistant Core after app update/start
   --core-timeout SECONDS  Wait time for Core to answer after restart (default: 180)
   --help                  Show this help
@@ -41,6 +43,7 @@ reload_store="true"
 skip_update="false"
 skip_start="false"
 restart_core="false"
+install_timeout="60"
 core_timeout="180"
 
 if [[ $# -gt 0 && "$1" != --* ]]; then
@@ -85,6 +88,10 @@ while [[ $# -gt 0 ]]; do
         --skip-start)
             skip_start="true"
             shift
+            ;;
+        --install-timeout)
+            install_timeout="${2:-}"
+            shift 2
             ;;
         --restart-core)
             restart_core="true"
@@ -163,6 +170,22 @@ if [[ -z "${slug}" ]]; then
     exit 1
 fi
 
+expected_version="$(python3 - "${tmp_dir}/before.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+print(data.get("expected", {}).get("app_version", ""))
+PY
+)"
+
+if [[ -z "${expected_version}" ]]; then
+    echo "Could not determine expected app version from initial check." >&2
+    cat "${tmp_dir}/before.json" >&2
+    exit 1
+fi
+
 if [[ ! "${slug}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
     echo "Refusing unsafe slug: ${slug}" >&2
     exit 2
@@ -186,6 +209,46 @@ fi
 
 if [[ "${skip_start}" != "true" ]]; then
     ha_app_command start start
+
+    echo "Waiting for copied custom integration ${domain} ${expected_version}." >&2
+    deadline=$((SECONDS + install_timeout))
+    while true; do
+        wait_check_args=("${host}" --user "${ssh_user}" --domain "${domain}")
+        if [[ -n "${repo}" ]]; then
+            wait_check_args+=(--repo "${repo}")
+        fi
+        if [[ -n "${app_name}" ]]; then
+            wait_check_args+=(--app-name "${app_name}")
+        fi
+        wait_check_args+=(--app-version "${expected_version}")
+
+        "${script_dir}/check_ha_app_on_haos.sh" "${wait_check_args[@]}" > "${tmp_dir}/wait.json"
+        if python3 - "${tmp_dir}/wait.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+checks = data.get("checks", {})
+required = (
+    "installed_app_version_matches",
+    "custom_component_installed",
+    "custom_component_domain_matches",
+    "custom_component_version_matches",
+)
+raise SystemExit(0 if all(checks.get(key) for key in required) else 1)
+PY
+        then
+            break
+        fi
+
+        if (( SECONDS >= deadline )); then
+            echo "Timed out waiting for ${domain} ${expected_version} to be copied to /config." >&2
+            cat "${tmp_dir}/wait.json" >&2
+            exit 1
+        fi
+        sleep 2
+    done
 fi
 
 if [[ "${restart_core}" == "true" ]]; then
@@ -208,7 +271,14 @@ fi
 if [[ -n "${app_name}" ]]; then
     final_check_args+=(--app-name "${app_name}")
 fi
-if [[ -n "${app_version}" ]]; then
-    final_check_args+=(--app-version "${app_version}")
-fi
-"${script_dir}/check_ha_app_on_haos.sh" "${final_check_args[@]}"
+final_check_args+=(--app-version "${expected_version}")
+"${script_dir}/check_ha_app_on_haos.sh" "${final_check_args[@]}" > "${tmp_dir}/final.json"
+cat "${tmp_dir}/final.json"
+python3 - "${tmp_dir}/final.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+raise SystemExit(0 if data.get("ok") else 1)
+PY

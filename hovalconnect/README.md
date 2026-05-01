@@ -16,6 +16,11 @@ Then install and start the **Hoval Connect** app once. It copies the integration
 
 Restart Home Assistant Core afterwards and add the integration from **Settings > Devices & services**.
 
+When updating from the Home Assistant UI, click **Update** first, then start the
+app once again. The update installs the new app image; the start step copies the
+new integration files into `/config`. Restart Home Assistant Core afterwards so
+the new Python code is loaded.
+
 During integration setup you can choose **System**, **Deutsch**, or **English** as the Hoval Connect language. This only changes Hoval Connect entity names and program labels; it does not change the global Home Assistant language.
 
 The integration exposes heat output and inverter energy use as `kWh` energy sensors and maps WFA-200 operating status codes to readable German/English status names.
