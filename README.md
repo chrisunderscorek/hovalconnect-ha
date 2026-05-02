@@ -54,9 +54,9 @@ language. The language setting only affects this integration.
 
 Example Home Assistant device view with German labels:
 
-| Climate controls | Heating circuit |
+| Temperature cards | Heating circuit |
 | --- | --- |
-| ![Hoval climate controls in Home Assistant](docs/images/hoval-ha-climate.png) | ![Hoval heating circuit entities in Home Assistant](docs/images/hoval-ha-heating-circuit.png) |
+| ![Hoval temperature cards in Home Assistant](docs/images/hoval-ha-climate.png) | ![Hoval heating circuit entities in Home Assistant](docs/images/hoval-ha-heating-circuit.png) |
 
 | Heat pump / heat generator | Hot water |
 | --- | --- |
@@ -104,20 +104,19 @@ Exact entities depend on what the Hoval cloud returns for your plant.
 
 ## Controls
 
-The integration can write the values that are available in the HovalConnect
-cloud API:
+The integration already contains Home Assistant control entities for values that
+the HovalConnect cloud API appears to allow changing:
 
 - Heating circuit target temperature
 - Hot water target temperature
 - Heating circuit program
 - Hot water program
 
-Heating circuit temperature changes follow the active Hoval program:
-
-- `Constant`: set the temperature permanently.
-- Weekly programs: create a temporary 4 hour override.
-
-Hot water target temperature is set permanently.
+Readout, device grouping, localization, energy counters, and status mapping are
+the actively tested parts of this integration. Write support is planned but has
+not been practically tested on the supported Belaria setup yet. Treat target
+temperature and program writes as not supported for normal use in `1.0.0`, even
+though the control entities are already present in Home Assistant.
 
 ## Installation
 
@@ -275,9 +274,9 @@ Do not commit tokens, Home Assistant recorder databases, or private API output.
 - Only my Belaria setup is actively supported and tested.
 - Other HovalConnect plants may expose different circuit names or values.
 - The HovalConnect cloud API is unofficial and may change without notice.
+- Write actions for target temperatures and program selection are planned but
+  not practically tested yet.
 - Two-factor authentication is not supported.
-- This project does not provide a local OPC UA server.
-- No Lovelace dashboard is included.
 
 ## License
 

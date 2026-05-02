@@ -182,7 +182,7 @@ die Quelle der Wahrheit sein.
 
 ## Nicht-Ziele
 
-- Keine UI-Lovelace-Dashboards bauen.
+- Keine vorkonfigurierten Home-Assistant-Dashboards bauen.
 - Keine Home-Assistant-Areas automatisch setzen; das bleibt Nutzerentscheidung.
 - Keine Entity-IDs absichtlich umbenennen.
 - Keine neuen API-Endpoints nur fuer diese Gruppierung einfuehren.

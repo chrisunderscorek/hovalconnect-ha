@@ -114,9 +114,7 @@
 - Hot water: Storage temperature, target temperature, status, program
 
 **Controls:**
-- Heating circuit temperature (temporary 4h when weekly program active, permanent when constant mode)
-- Hot water temperature (always permanent)
-- Program switching: Weekly program 1/2, Constant, Eco mode
+- Initial control entities for heating circuit temperature, hot water temperature, and program switching. Write behavior still needs practical validation.
 
 **Authentication:**
 - OAuth2 PKCE via SAP IAS

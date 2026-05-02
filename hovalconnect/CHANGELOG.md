@@ -111,5 +111,5 @@
 - Heating circuit sensors: flow temp actual/target, room temp actual/target, outside temperature, status, and program.
 - Heat generator sensors: flow temp actual/target, modulation, operating hours, switching cycles, and error code.
 - Hot water sensors: storage temperature, target temperature, status, and program.
-- Controls for heating circuit temperature, hot water temperature, and program switching.
+- Initial control entities for heating circuit temperature, hot water temperature, and program switching. Write behavior still needs practical validation.
 - OAuth2 PKCE authentication via SAP IAS with token persistence and reauthentication flow.
