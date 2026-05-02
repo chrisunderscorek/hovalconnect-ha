@@ -1,6 +1,10 @@
 # Hoval Connect
 
-Home Assistant App that installs or updates the bundled Hoval Connect custom integration.
+Home Assistant app that installs or updates the bundled Hoval Connect custom
+integration.
+
+This app is a one-shot installer. It copies the integration into Home
+Assistant's configuration directory and then exits.
 
 Install the repository in Home Assistant:
 
@@ -23,4 +27,9 @@ the new Python code is loaded.
 
 During integration setup you can choose **System**, **Deutsch**, or **English** as the Hoval Connect language. This only changes Hoval Connect entity names and program labels; it does not change the global Home Assistant language.
 
-The integration exposes heat output and inverter energy use as `kWh` energy sensors and maps WFA-200 operating status codes to readable German/English status names.
+The integration is actively tested with my Hoval Belaria setup. It groups
+entities by plant, heat pump, heating circuit, and hot water, exposes heat
+output and inverter energy use as `kWh` energy sensors, and maps WFA-200
+operating status codes to readable German/English status names.
+
+License: GPL-3.0-only starting with version 1.0.0.

@@ -11,7 +11,7 @@ LABEL \
     io.hass.arch="${BUILD_ARCH}" \
     org.opencontainers.image.source="https://github.com/chrisunderscorek/hovalconnect-ha" \
     org.opencontainers.image.description="Home Assistant app image for Hoval Connect" \
-    org.opencontainers.image.licenses="MIT"
+    org.opencontainers.image.licenses="GPL-3.0-only"
 
 WORKDIR /app
 

@@ -1,221 +1,287 @@
-# Hoval Connect – Home Assistant Integration
+# Hoval Connect for Home Assistant
 
 [![Version](https://img.shields.io/github/v/release/chrisunderscorek/hovalconnect-ha?label=version)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--3.0--only-blue)](LICENSE)
 
-Unofficial Home Assistant integration for Hoval heat pumps via the HovalConnect Cloud API.
+Unofficial Home Assistant integration for Hoval heat pumps through the
+HovalConnect cloud API.
 
-> ⚠️ **Unofficial integration** – not supported by Hoval. Use at your own risk.
+This project is not supported by Hoval. It uses the same cloud backend as the
+official HovalConnect mobile app and can break if Hoval changes the API.
 
----
+## Status
 
-## Supported Devices
+The integration is built and tested for my own Hoval Belaria installation
+through the HovalConnect app, with WFA-200 operating status data and the usual
+heat pump, heating circuit, and hot water circuits.
 
-All devices compatible with the **HovalConnect App** (iOS/Android), e.g.:
-- Belaria Compact IR
-- Other Hoval heat pumps (untested – feedback welcome)
+Other HovalConnect-compatible heat pumps may work, but they are best-effort
+until somebody tests them and reports the available circuits and values.
 
----
+## What It Does
 
-## Features
+The integration creates native Home Assistant devices for the plant and its
+circuits instead of putting every entity into one long flat list:
 
-| Entity | Type | Description |
-|--------|------|-------------|
-| `climate.hoval_heating_circuit` | Climate | Read & set room temperature |
-| `climate.hoval_hot_water` | Climate | Read & set hot water temperature |
-| `select.hoval_heating_circuit_program` | Select | Weekly prog. 1/2 / Constant / Eco mode |
-| `sensor.hoval_flow_temperature` | Sensor | Flow temp. actual |
-| `sensor.hoval_return_temperature` | Sensor | Return temp. |
-| `sensor.hoval_outside_temperature` | Sensor | Outdoor temp. |
-| `sensor.hoval_modulation` | Sensor | Compressor modulation (%) |
-| `sensor.hoval_operating_hours` | Sensor | Total operating hours |
-| `sensor.hoval_operation_cycles` | Sensor | Total switching cycles |
-| `sensor.hoval_heat_output_energy` | Sensor | Heat output energy in kWh |
-| `sensor.hoval_inverter_energy_use` | Sensor | Inverter energy consumption in kWh |
-| `sensor.hoval_actual_temperature_sf1` | Sensor | Hot water actual temp. SF1 |
-| `sensor.hoval_actual_temperature_sf2` | Sensor | Hot water actual temp. SF2 |
-| `sensor.hoval_*_status` | Sensor | Circuit and WFA-200 operating status |
-| `sensor.hoval_*_active_program` | Sensor | Active week/day prog. names |
+- Hoval plant
+- Heat pump / heat generator
+- Heating circuit
+- Hot water
 
-### Control Logic
+Entity labels can be shown in German, English, or Home Assistant's system
+language. The language setting only affects this integration.
 
-**Heating circuit:**
-- Program = `Constant` → temperature set **permanently**
-- Program = `Weekly 1/2` → temperature valid for **4 hours** (temporary override)
+## Main Features
 
-**Hot water:**
-- Temperature is always set **permanently**
+- Login with HovalConnect email and password.
+- Optional permanent credential storage; tokens are stored either way.
+- OAuth token renewal after half of the effective token lifetime.
+- Retry handling for short Hoval cloud outages and HTTP `429`/`5xx` responses.
+- 30 second cloud polling interval.
+- Home Assistant device grouping by plant, heat pump, heating circuit, and hot
+  water.
+- German and English names for entities, program values, circuit status values,
+  and WFA-200 operating status values.
+- Active week/day program names from the API instead of raw keys like `week1`.
+- Energy sensors in `kWh` for heat output and inverter energy use.
+- Modulation normalized to `0%` when the heat pump is off or waiting and the
+  cloud omits the value.
+- Home Assistant app image for HAOS installation through an add-on repository.
+- HACS/manual installation remains possible via `custom_components/hovalconnect`.
 
----
+## Screenshots
+
+Example Home Assistant device view with German labels:
+
+| Climate controls | Heating circuit |
+| --- | --- |
+| ![Hoval climate controls in Home Assistant](docs/images/hoval-ha-climate.png) | ![Hoval heating circuit entities in Home Assistant](docs/images/hoval-ha-heating-circuit.png) |
+
+| Heat pump / heat generator | Hot water |
+| --- | --- |
+| ![Hoval heat pump entities in Home Assistant](docs/images/hoval-ha-heat-pump.png) | ![Hoval hot water entities in Home Assistant](docs/images/hoval-ha-hot-water.png) |
+
+## Exposed Values
+
+Exact entities depend on what the Hoval cloud returns for your plant.
+
+### Heat Pump / Heat Generator
+
+- Heat generator status / `Status Wärmeerzeuger`
+- WFA-200 operating status / `Betriebsstatus`
+- Heat generator actual temperature / `Wärmeerzeuger-Ist`
+- Heat generator target temperature / `Wärmeerzeuger Soll`
+- Return temperature / `Rücklauftemp.`
+- Compressor modulation / `Modulation`
+- Operating hours / `Betriebsstunden`
+- Operating hours over 50% / `Betriebsstunden > 50%`
+- Switching cycles / `Schaltzyklen`
+- Heat output energy / `Wärmeabgabe`
+- Inverter energy use / `Stromverbrauch Inverter`
+
+### Heating Circuit
+
+- Heating circuit temperature control / `Hoval Heizkörper`
+- Heating circuit program select / `Heizkreis Prog.`
+- Heating circuit status / `Status Heizkreis`
+- Active heating circuit program / `Akt. Heizkreisprog.`
+- Flow temperature actual / `Vorlauftemp. Ist`
+- Flow temperature target / `Vorlauftemp. Soll`
+- Room temperature actual / `Raumtemp. Ist`
+- Room temperature target / `Raumtemp. Soll`
+- Outdoor temperature / `Außentemp.`
+
+### Hot Water
+
+- Hot water temperature control / `Hoval Warmwasser`
+- Hot water program select / `Warmwasser Prog.`
+- Hot water status / `Status Warmwasser`
+- Active hot water program / `Akt. Warmwasserprog.`
+- Hot water target temperature / `Soll-Temp.`
+- Actual temperature SF1 / `Ist-Temp. SF1`
+- Actual temperature SF2 / `Ist-Temp. SF2`
+
+## Controls
+
+The integration can write the values that are available in the HovalConnect
+cloud API:
+
+- Heating circuit target temperature
+- Hot water target temperature
+- Heating circuit program
+- Hot water program
+
+Heating circuit temperature changes follow the active Hoval program:
+
+- `Constant`: set the temperature permanently.
+- Weekly programs: create a temporary 4 hour override.
+
+Hot water target temperature is set permanently.
 
 ## Installation
 
-### Step 1 – Install Integration
+### HAOS App Repository
 
-**Manual:**
-1. Copy folder `custom_components/hovalconnect/` to `config/custom_components/hovalconnect/`
-2. Restart Home Assistant
+This is the preferred installation path for this repository.
 
-**Via Home Assistant App Repository:**
-1. Settings → Add-ons → Add-on Store → ⋮ → Repositories
-2. URL: `https://github.com/chrisunderscorek/hovalconnect-ha`
-3. Install **Hoval Connect**
-4. Start the app once → Restart Home Assistant Core
+1. In Home Assistant, open **Settings > Add-ons > Add-on Store**.
+2. Open the three-dot menu and select **Repositories**.
+3. Add this repository:
 
-The Home Assistant app copies the bundled integration into
-`/config/custom_components/hovalconnect` and then exits. Start it again whenever
-you want to refresh the installed integration from the app image.
+   ```text
+   https://github.com/chrisunderscorek/hovalconnect-ha
+   ```
 
-For updates through the Home Assistant UI, the **Update** button only updates the
-app image. It does not copy the new integration files into `/config` and it does
-not reload Home Assistant Core. After every app update, start **Hoval Connect**
-once, wait for the app log line `Installed Hoval Connect integration <version>`,
-and then restart Home Assistant Core.
+4. Install **Hoval Connect**.
+5. Start the app once.
+6. Wait for the app log line:
 
-**Via HACS (Custom Repository):**
-1. HACS → Integrations → ⋮ → Custom Repositories
-2. URL: `https://github.com/chrisunderscorek/hovalconnect-ha`
-3. Category: Integration → Add
-4. Install integration → Restart HA
+   ```text
+   Installed Hoval Connect integration <version>
+   ```
 
-### Step 2 – Configure
+7. Restart Home Assistant Core.
+8. Add the integration from **Settings > Devices & services**.
 
-1. Settings → Integrations → **+ Add Integration**
-2. Search for "Hoval Connect"
-3. Enter your HovalConnect email and password
-4. Optional: enable **Store email and password permanently** if Home Assistant should be allowed to renew tokens with your credentials after token-based renewal fails
-5. Select the integration language: **System**, **Deutsch**, or **English**
-6. Select your plant → Done
+The HAOS app is a one-shot installer. It copies the bundled custom integration
+into:
 
-The language option controls the Hoval Connect entity names and program labels
-inside this integration only. It does not change the global Home Assistant
-language. Change it later from **Settings → Devices & services → Hoval Connect
-→ Configure**.
+```text
+/config/custom_components/hovalconnect
+```
 
-German and English entity names follow the official HovalConnect app wording
-where known, for example `Wärmeerzeuger-Ist`, `Vorlauftemp. Ist`,
-`Ist-Temp. SF1`, `Ist-Temp. SF2`, `Heat generator actual`, and
-`Flow temp. actual`.
+Then it exits. It is not a long-running service.
 
----
+### Updating Through HAOS
 
-## Token Management
+The Home Assistant **Update** button updates only the app image. It does not
+copy the new Python integration files into `/config` and it does not restart
+Home Assistant Core.
 
-During setup Home Assistant exchanges your HovalConnect email and password for OAuth tokens and stores the token data in the config entry. Email and password are not stored unless **Store email and password permanently** is enabled.
+After every app update:
 
-| Token | Validity | Renewal |
-|-------|----------|---------|
-| Access Token | `expires_in` from Hoval/SAP IAS, minus 60 seconds safety margin | First renewal attempt after half of its effective lifetime when a refresh token or stored credentials are available |
-| Refresh Token | Optional, if returned by Hoval/SAP IAS | Preferred renewal mechanism |
-| Stored Email/Password | Optional | Used only as explicit fallback when token-based renewal is unavailable or rejected |
+1. Click **Update** for the Hoval Connect app.
+2. Start **Hoval Connect** once.
+3. Wait for the install log line.
+4. Restart Home Assistant Core.
 
-If token renewal fails while the current access token is still valid, the integration keeps using the current token and retries renewal with a staged backoff: 3 attempts after 10 seconds, 3 attempts after 30 seconds, 3 attempts after 60 seconds, then every 120 seconds. If the token endpoint sends `Retry-After`, the integration waits at least that long. If no refresh token is available and credentials were not stored, Home Assistant will ask you to re-authenticate when the saved token expires.
+### HACS Or Manual Installation
 
-The SAP IAS `access_token` can be opaque. Hoval's core API currently expects a
-JWT-shaped bearer token and otherwise rejects requests as malformed, so the
-integration prefers the JWT-shaped `id_token` when one is returned.
+The integration code remains available under `custom_components/hovalconnect`.
+This is useful if you previously installed the Hoval Connect integration via
+HACS or if you prefer a manual custom-component installation.
 
----
+For HACS:
 
-## Security
+1. HACS > Integrations > three-dot menu > Custom repositories.
+2. Add this repository as category **Integration**.
+3. Install **Hoval Connect**.
+4. Restart Home Assistant Core.
 
-- Email and password are only stored when **Store email and password permanently** is enabled
-- Transmission exclusively via **HTTPS** to SAP IAS (Hoval Identity Provider)
-- Access and refresh tokens are saved in the Home Assistant config entry and must be treated as bearer secrets
+For manual installation, copy:
 
----
+```text
+custom_components/hovalconnect
+```
 
-## Technical Details
+to:
 
-This integration uses the unofficial HovalConnect Cloud API, reverse-engineered from the official iOS/Android app.
+```text
+/config/custom_components/hovalconnect
+```
 
-| Endpoint | Usage |
-|----------|-------|
-| `GET /api/my-plants` | Fetch plants |
-| `GET /v1/plants/{id}/settings` | Get plant access token |
-| `GET /v3/plants/{id}/circuits` | Heating circuit data |
-| `GET /v3/api/statistics/live-values/{id}` | Live sensor values |
-| `GET /v2/business/plants/{id}/circuits/{path}` | WFA operating status fallback |
-| `POST /v3/plants/{id}/circuits/{path}/temporary-change` | Temporary temperature |
-| `PATCH /v3/plants/{id}/circuits/{path}/programs` | Permanent temperature |
-| `POST /v3/plants/{id}/circuits/{path}/programs/{program}` | Switch program |
+Then restart Home Assistant Core.
 
-Energy counters exposed by Hoval as `heatAmount` and `totalEnergy` are converted
-from the cloud values that behave like MWh to Home Assistant `kWh` energy
-sensors. The WFA-200 documentation names the corresponding counters as kWh
-parameters, including `01-048 Energiemenge total` and `01-027 Aufgenommene el.
-Energie`.
+## Configuration
 
-- **Auth:** OAuth2 via SAP IAS, JWT bearer for the Hoval core API
-- **Update interval:** 30 seconds
+1. Open **Settings > Devices & services**.
+2. Add **Hoval Connect**.
+3. Enter your HovalConnect email and password.
+4. Choose whether Home Assistant may store email and password permanently.
+5. Choose the integration language: **System**, **Deutsch**, or **English**.
+6. Select your Hoval plant.
 
-### Frontend App Version
+Email and password are not stored unless permanent credential storage is
+enabled. OAuth token data is stored in the Home Assistant config entry.
 
-The Hoval core API also checks the frontend app version sent by the official
-mobile app. This integration uses `3.2.0` as the bundled fallback version.
+The language can be changed later from the integration options.
 
-At startup the integration checks Google Play for the current HovalConnect app
-version and logs the default, the detected store version, and the effective
-version header. If Hoval returns HTTP 426 `Upgrade Required`, the integration
-checks the store version again and retries the failed request once if the
-effective version changed. These rechecks are limited to one 6-hour slot
-calculated from the integration startup time, so installations do not all check
-at the same wall-clock time.
+## Authentication And Token Renewal
 
-### API Reference Snapshot
+During setup, the integration exchanges your HovalConnect credentials for OAuth
+tokens through SAP IAS. Hoval's core API currently expects a JWT-shaped bearer
+token, so the integration prefers the JWT-shaped `id_token` when SAP IAS also
+returns an opaque OAuth `access_token`.
 
-`docs/api-docs.json` contains a reference OpenAPI snapshot from:
+Token handling:
+
+- Renew after half of the effective token lifetime.
+- Prefer refresh-token renewal.
+- Use stored email/password only as an explicit fallback if enabled.
+- If renewal fails while the current token is still valid, retry with staged
+  backoff: 3x 10 seconds, 3x 30 seconds, 3x 60 seconds, then 120 seconds.
+- Honor longer `Retry-After` responses from the token endpoint.
+- Ask for re-authentication if the token expires and cannot be renewed.
+
+## Hoval App Version Header
+
+The Hoval cloud checks the frontend app version sent by the official mobile app.
+This integration ships with `3.2.0` as the fallback version header.
+
+At startup and after HTTP `426 Upgrade Required`, the integration tries to read
+the current Google Play HovalConnect version and uses it if found. The check is
+limited to one 6 hour slot from integration startup, so installations do not all
+probe Hoval/Google at the same wall-clock time.
+
+## API Notes
+
+The integration uses these Hoval cloud areas:
+
+- `GET /api/my-plants`
+- `GET /v1/plants/{id}/settings`
+- `GET /v3/plants/{id}/circuits`
+- `GET /v3/api/statistics/live-values/{id}`
+- `GET /v2/business/plants/{id}/circuits/{path}`
+- `POST /v3/plants/{id}/circuits/{path}/temporary-change`
+- `PATCH /v3/plants/{id}/circuits/{path}/programs`
+- `POST /v3/plants/{id}/circuits/{path}/programs/{program}`
+
+`docs/api-docs.json` contains an unofficial OpenAPI snapshot captured from:
 
 ```text
 GET https://azure-iot-prod.hoval.com/core/v3/api-docs
 ```
 
-The snapshot was captured with HovalConnect frontend app version `3.2.0`. It is
-OpenAPI `3.1.0`, contains 152 paths, and should be treated as an unofficial
-reference, not as a stable contract from Hoval.
+The snapshot is useful for development, but it is not an official contract from
+Hoval.
 
-### Debug Tool
+## Debug Tools
 
-`tools/debug_hoval_auth.py` can exchange HovalConnect credentials for token data,
-inspect existing tokens, print sample API calls, and probe the current mobile app
-versions.
+The `tools/` directory contains local helper scripts for development and HAOS
+checks. The most useful ones are:
 
-```bash
-tools/debug_hoval_auth.py --store-versions
-tools/debug_hoval_auth.py --sample-curl
-tools/debug_hoval_auth.py --username user@example.com --sample-curl --test-api-docs
-tools/debug_hoval_auth.py --bump-app-version 3.2.0 --sample-curl
-```
+- `tools/debug_hoval_auth.py`: token and API probing.
+- `tools/check_ha_app_on_haos.sh`: check app and installed integration versions
+  on HAOS.
+- `tools/update_ha_app_on_haos.sh`: update/start the one-shot app on HAOS.
+- `tools/analyze_ha_history_availability.py`: inspect a locally copied Home
+  Assistant recorder database for `unavailable` phases.
 
-Use `--only-tokens` when piping token output into another command. Use
-`--bump-app-version VERSION` to skip Google Play / Apple App Store probing and
-force a specific frontend app version header.
+Do not commit tokens, Home Assistant recorder databases, or private API output.
 
----
+## Known Limits
 
-## Known Limitations
-
-- No official API access → API may change without notice
-- Two-factor authentication is not supported
-
----
-
-## Contributing
-
-Pull requests and issues welcome! Especially needed:
-- Tests with other Hoval models
-- macOS/Linux Setup Script
-- HACS validation
-
----
+- Only my Belaria setup is actively supported and tested.
+- Other HovalConnect plants may expose different circuit names or values.
+- The HovalConnect cloud API is unofficial and may change without notice.
+- Two-factor authentication is not supported.
+- This project does not provide a local OPC UA server.
+- No Lovelace dashboard is included.
 
 ## License
 
-MIT License – see [LICENSE](LICENSE)
+GPL-3.0-only. See [LICENSE](LICENSE).
 
----
-
-## Acknowledgements
-
-Reverse engineering methodology inspired by similar projects such as [homeassistant-myskoda](https://github.com/skodaconnect/homeassistant-myskoda).
+Versions up to and including `v0.2.2` were published under the MIT License.
+Starting with `v1.0.0`, this project is distributed under GPL-3.0-only.

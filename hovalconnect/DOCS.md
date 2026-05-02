@@ -43,6 +43,18 @@ Energy counters for heat output and inverter energy use are exposed as Home Assi
 
 The WFA-200 operating status sensor uses the WFA-200 status table, for example `0` becomes `WP aus` in German and `Heat pump off` in English. If the live-values response does not include `faStatus`, the integration falls back to the read-only business circuit detail datapoint `*.2053`.
 
+## Screenshots
+
+Example Home Assistant device view with German labels:
+
+| Climate controls | Heating circuit |
+| --- | --- |
+| ![Hoval climate controls in Home Assistant](../docs/images/hoval-ha-climate.png) | ![Hoval heating circuit entities in Home Assistant](../docs/images/hoval-ha-heating-circuit.png) |
+
+| Heat pump / heat generator | Hot water |
+| --- | --- |
+| ![Hoval heat pump entities in Home Assistant](../docs/images/hoval-ha-heat-pump.png) | ![Hoval hot water entities in Home Assistant](../docs/images/hoval-ha-hot-water.png) |
+
 ## Network and Security
 
 The app ships with a custom AppArmor profile. It grants write access only to the Home Assistant custom integration path and allows outbound TCP/DNS networking. The installed integration itself runs inside Home Assistant Core and uses HTTPS to reach the Hoval cloud API.

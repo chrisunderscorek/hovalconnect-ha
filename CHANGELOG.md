@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.0] – 2026-05-02
+
+### Release
+
+- Mark the integration as the first stable release for the actively tested Hoval Belaria setup.
+- Rework the README to describe the real HAOS app flow, tested scope, current entity set, and known limits.
+- Change the project license from MIT to GPL-3.0-only. Versions up to and including `v0.2.2` remain available under MIT.
+
 ## [0.2.2] – 2026-05-02
 
 ### Devices
