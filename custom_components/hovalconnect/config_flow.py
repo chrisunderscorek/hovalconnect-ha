@@ -11,6 +11,7 @@ from .const import (
     CONF_LANGUAGE,
     CONF_PASSWORD,
     CONF_PLANT_ID,
+    CONF_PLANT_NAME,
     CONF_STORE_PASSWORD,
     DOMAIN,
     LANGUAGE_SYSTEM,
@@ -108,16 +109,21 @@ class HovalConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_plant(self, user_input=None):
         options = {
-            p.get("plantExternalId", str(i)): p.get("description", f"Plant {i+1}")
+            p.get("plantExternalId", str(i)): p.get("description") or f"Plant {i+1}"
             for i, p in enumerate(self._plants)
         }
         if user_input is not None:
             plant_id = user_input[CONF_PLANT_ID]
+            plant_name = options.get(plant_id) or plant_id
             await self.async_set_unique_id(f"hoval_{plant_id}")
             self._abort_if_unique_id_configured()
             return self.async_create_entry(
-                title=f"{MANUFACTURER} – {options.get(plant_id, plant_id)}",
-                data={CONF_PLANT_ID: plant_id, **self._tokens},
+                title=f"{MANUFACTURER} – {plant_name}",
+                data={
+                    CONF_PLANT_ID: plant_id,
+                    CONF_PLANT_NAME: plant_name,
+                    **self._tokens,
+                },
                 options={CONF_LANGUAGE: self._language},
             )
         return self.async_show_form(

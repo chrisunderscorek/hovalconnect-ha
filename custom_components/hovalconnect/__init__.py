@@ -7,6 +7,8 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .api import HovalAuthError, HovalAPIError, HovalConnectAPI
@@ -20,10 +22,75 @@ from .const import (
     DOMAIN,
     UPDATE_INTERVAL_SECONDS,
 )
+from .devices import circuit_device_info, plant_device_info
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.CLIMATE, Platform.SENSOR, Platform.SELECT]
 LIVE_VALUE_CIRCUIT_TYPES = {"HK", "BL", "WW"}
+
+
+def _register_devices_and_migrate_entities(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    coordinator: DataUpdateCoordinator,
+    plant_id: str,
+) -> None:
+    """Register plant/circuit devices and move existing entities to circuits.
+
+    Home Assistant keeps the existing device assignment for already registered
+    entities. The integration therefore has to migrate old single-device entity
+    registry entries explicitly when introducing the circuit device hierarchy.
+
+    TODO: Keep this compatibility migration while users can still upgrade from
+    <=0.2.1. It is idempotent for new installs and can be removed after a few
+    releases once the circuit device hierarchy is the normal baseline.
+    """
+    device_reg = dr.async_get(hass)
+    device_reg.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        **plant_device_info(entry, plant_id, hass.config.language),
+    )
+
+    circuit_device_ids = {}
+    for circuit in (coordinator.data or {}).get("circuits", []):
+        path = circuit.get("path")
+        if not path:
+            continue
+        device = device_reg.async_get_or_create(
+            config_entry_id=entry.entry_id,
+            **circuit_device_info(
+                coordinator,
+                entry,
+                plant_id,
+                path,
+                hass.config.language,
+            ),
+        )
+        circuit_device_ids[path] = device.id
+
+    if not circuit_device_ids:
+        return
+
+    entity_reg = er.async_get(hass)
+    migrated_entities = 0
+    for entity_entry in er.async_entries_for_config_entry(entity_reg, entry.entry_id):
+        if entity_entry.platform != DOMAIN or not entity_entry.unique_id:
+            continue
+
+        for path, device_id in circuit_device_ids.items():
+            if entity_entry.unique_id.startswith(f"hoval_{plant_id}_{path}_"):
+                if entity_entry.device_id != device_id:
+                    entity_reg.async_update_entity(entity_entry.entity_id, device_id=device_id)
+                    migrated_entities += 1
+                break
+
+    if migrated_entities:
+        _LOGGER.info(
+            "Migrated %s Hoval Connect entities from the legacy plant device "
+            "to circuit devices",
+            migrated_entities,
+        )
+
 
 async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
     runtime = hass.data.get(DOMAIN, {}).get(entry.entry_id)
@@ -224,6 +291,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         update_interval=timedelta(seconds=UPDATE_INTERVAL_SECONDS),
     )
     await coordinator.async_config_entry_first_refresh()
+    _register_devices_and_migrate_entities(hass, entry, coordinator, plant_id)
+
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "coordinator": coordinator,
         "api": api,

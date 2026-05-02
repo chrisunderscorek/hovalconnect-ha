@@ -4,7 +4,8 @@ import logging
 from homeassistant.components.select import SelectEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
-from .localization import device_info, program_names, program_select_suffix
+from .devices import circuit_device_info, circuit_type_label
+from .localization import program_names, program_select_suffix
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -12,7 +13,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     circuits = data["coordinator"].data.get("circuits", [])
     entities = [
-        HovalProgramSelect(data["coordinator"], data["api"], entry, data["plant_id"], c, hass.config.language)
+        HovalProgramSelect(
+            data["coordinator"],
+            data["api"],
+            entry,
+            data["plant_id"],
+            c,
+            hass.config.language,
+        )
         for c in circuits if c.get("selectable") and c.get("type") in ("HK", "WW")
     ]
     async_add_entities(entities)
@@ -21,11 +29,14 @@ class HovalProgramSelect(CoordinatorEntity, SelectEntity):
     def __init__(self, coordinator, api, entry, plant_id, circuit, hass_language):
         super().__init__(coordinator)
         self._api = api
+        self._entry = entry
+        self._hass_language = hass_language
         self._plant_id = plant_id
         self._path = circuit["path"]
         self._program_names = program_names(entry, hass_language)
         self._attr_options = list(self._program_names.values())
-        name = circuit.get("name") or "Heating Circuit"
+        circuit_type = circuit.get("type", "")
+        name = circuit.get("name") or circuit_type_label(entry, circuit_type, hass_language)
         self._attr_name = f"Hoval {name} {program_select_suffix(entry, hass_language)}"
         self._attr_unique_id = f"hoval_{plant_id}_{self._path}_program"
 
@@ -56,4 +67,10 @@ class HovalProgramSelect(CoordinatorEntity, SelectEntity):
 
     @property
     def device_info(self):
-        return device_info(self.coordinator, self._plant_id)
+        return circuit_device_info(
+            self.coordinator,
+            self._entry,
+            self._plant_id,
+            self._path,
+            self._hass_language,
+        )

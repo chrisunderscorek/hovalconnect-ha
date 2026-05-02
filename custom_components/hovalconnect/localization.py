@@ -7,11 +7,9 @@ from homeassistant.config_entries import ConfigEntry
 
 from .const import (
     CONF_LANGUAGE,
-    DOMAIN,
     LANGUAGE_DE,
     LANGUAGE_EN,
     LANGUAGE_SYSTEM,
-    MANUFACTURER,
 )
 
 LANGUAGE_LABELS = {
@@ -305,22 +303,3 @@ def localized_operating_status_value(
 def program_select_suffix(entry: ConfigEntry, hass_language: str | None = None) -> str:
     """Return the localized suffix for the program select entity name."""
     return PROGRAM_SELECT_SUFFIX[effective_language(entry, hass_language)]
-
-
-def device_info(coordinator, plant_id: str) -> dict:
-    """Build device metadata from the API instead of a hard-coded model name."""
-    model = None
-    for circuit in coordinator.data.get("circuits", []):
-        if circuit.get("type") == "BL" and circuit.get("name"):
-            model = circuit["name"]
-            break
-
-    name = f"{MANUFACTURER} {model}" if model else MANUFACTURER
-    info = {
-        "identifiers": {(DOMAIN, plant_id)},
-        "name": name,
-        "manufacturer": MANUFACTURER,
-    }
-    if model:
-        info["model"] = model
-    return info

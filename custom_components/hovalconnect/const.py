@@ -20,6 +20,7 @@ API_SET_PROGRAM    = f"{API_BASE}/v3/plants/{{plant_id}}/circuits/{{path}}/progr
 API_BUSINESS_CIRCUIT_DETAIL = f"{API_BASE}/v2/business/plants/{{plant_id}}/circuits/{{path}}"
 
 CONF_PLANT_ID = "plant_id"
+CONF_PLANT_NAME = "plant_name"
 CONF_EMAIL = "email"
 CONF_PASSWORD = "password"
 CONF_STORE_PASSWORD = "store_password"

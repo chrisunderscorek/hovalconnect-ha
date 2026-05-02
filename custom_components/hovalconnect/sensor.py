@@ -4,10 +4,10 @@ from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, Sen
 from homeassistant.const import UnitOfEnergy, UnitOfTemperature
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
+from .devices import circuit_device_info
 from .localization import (
     active_program_value,
     apply_entity_name,
-    device_info,
     localized_operating_status_value,
     localized_status_value,
 )
@@ -96,27 +96,62 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
         # Source: API_TREE_CIRCUITS. This is circuit metadata, not a live-value row.
         if c.get("circuitStatus") is not None:
-            entities.append(HovalStatusSensor(coordinator, entry, plant_id, path, ctype, hass.config.language))
+            entities.append(
+                HovalStatusSensor(coordinator, entry, plant_id, path, ctype, hass.config.language)
+            )
 
         # Source: API_TREE_CIRCUITS. The circuit payload contains both the stable
         # API program key and the user-facing week/day program names.
         if c.get("activeProgram") is not None:
-            entities.append(HovalProgramSensor(coordinator, entry, plant_id, path, ctype, hass.config.language))
+            entities.append(
+                HovalProgramSensor(coordinator, entry, plant_id, path, ctype, hass.config.language)
+            )
 
         # Source: API_TREE_CIRCUITS. Legacy fallback; HK/WW live-values below are
         # preferred where available to avoid duplicate values in Home Assistant.
         if c.get("actualValue") is not None and ctype != "WW":
-            entities.append(HovalCircuitTempSensor(coordinator, entry, plant_id, path, ctype, "actualValue"))
+            entities.append(
+                HovalCircuitTempSensor(
+                    coordinator,
+                    entry,
+                    plant_id,
+                    path,
+                    ctype,
+                    "actualValue",
+                    hass.config.language,
+                )
+            )
         # HK/WW target temperatures are already exposed by live values.
         if c.get("selectable") and c.get("targetValue") is not None and ctype not in ("HK", "WW"):
-            entities.append(HovalCircuitTempSensor(coordinator, entry, plant_id, path, ctype, "targetValue"))
+            entities.append(
+                HovalCircuitTempSensor(
+                    coordinator,
+                    entry,
+                    plant_id,
+                    path,
+                    ctype,
+                    "targetValue",
+                    hass.config.language,
+                )
+            )
 
         # Source: API_TREE_LIVE_VALUES. Live-value rows are fetched per circuit.
         for key, translation_key, unit, dev_class, state_class in LIVE_SENSORS.get(ctype, []):
-            entities.append(HovalLiveSensor(
-                coordinator, entry, plant_id, path, ctype,
-                key, translation_key, unit, dev_class, state_class, hass.config.language
-            ))
+            entities.append(
+                HovalLiveSensor(
+                    coordinator,
+                    entry,
+                    plant_id,
+                    path,
+                    ctype,
+                    key,
+                    translation_key,
+                    unit,
+                    dev_class,
+                    state_class,
+                    hass.config.language,
+                )
+            )
 
     async_add_entities(entities)
 
@@ -130,8 +165,10 @@ class HovalCircuitTempSensor(CoordinatorEntity, SensorEntity):
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, entry, plant_id, path, ctype, key):
+    def __init__(self, coordinator, entry, plant_id, path, ctype, key, hass_language):
         super().__init__(coordinator)
+        self._entry = entry
+        self._hass_language = hass_language
         self._plant_id = plant_id
         self._path = path
         self._key = key
@@ -146,7 +183,13 @@ class HovalCircuitTempSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return device_info(self.coordinator, self._plant_id)
+        return circuit_device_info(
+            self.coordinator,
+            self._entry,
+            self._plant_id,
+            self._path,
+            self._hass_language,
+        )
 
 
 class HovalLiveSensor(CoordinatorEntity, SensorEntity):
@@ -155,7 +198,20 @@ class HovalLiveSensor(CoordinatorEntity, SensorEntity):
     _api_tree = API_TREE_LIVE_VALUES
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, entry, plant_id, path, ctype, key, translation_key, unit, dev_class, state_class, hass_language):
+    def __init__(
+        self,
+        coordinator,
+        entry,
+        plant_id,
+        path,
+        ctype,
+        key,
+        translation_key,
+        unit,
+        dev_class,
+        state_class,
+        hass_language,
+    ):
         super().__init__(coordinator)
         self._entry = entry
         self._hass_language = hass_language
@@ -266,7 +322,13 @@ class HovalLiveSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return device_info(self.coordinator, self._plant_id)
+        return circuit_device_info(
+            self.coordinator,
+            self._entry,
+            self._plant_id,
+            self._path,
+            self._hass_language,
+        )
 
 
 class HovalStatusSensor(CoordinatorEntity, SensorEntity):
@@ -310,7 +372,13 @@ class HovalStatusSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return device_info(self.coordinator, self._plant_id)
+        return circuit_device_info(
+            self.coordinator,
+            self._entry,
+            self._plant_id,
+            self._path,
+            self._hass_language,
+        )
 
 
 class HovalProgramSensor(CoordinatorEntity, SensorEntity):
@@ -356,4 +424,10 @@ class HovalProgramSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return device_info(self.coordinator, self._plant_id)
+        return circuit_device_info(
+            self.coordinator,
+            self._entry,
+            self._plant_id,
+            self._path,
+            self._hass_language,
+        )

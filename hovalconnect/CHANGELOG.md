@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## [0.2.2] - 2026-05-02
+
+### Devices
+
+- Group Home Assistant entities into native Hoval plant, heat pump, heating circuit, and hot water devices.
+- Keep existing entity unique IDs stable while migrating old single-device entities to the new circuit devices.
+- Store the selected Hoval plant name during setup and use localized circuit fallback names.
 
 ### Tooling
 
