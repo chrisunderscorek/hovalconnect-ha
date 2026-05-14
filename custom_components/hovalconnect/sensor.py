@@ -1,7 +1,7 @@
 """Hoval Connect Sensor entities."""
 from __future__ import annotations
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
-from homeassistant.const import UnitOfEnergy, UnitOfTemperature
+from homeassistant.const import UnitOfEnergy, UnitOfPower, UnitOfTemperature
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from .devices import circuit_device_info
@@ -23,6 +23,12 @@ ENERGY_WFA_PARAMETERS = {
     "heatAmount": "01-048 Energiemenge total kWh",
     "totalEnergy": "01-027 Aufgenommene el. Energie kWh",
 }
+POWER_SOURCE_LABELS = {
+    "currentEnergyOutput": "HovalConnect live value: Aktuelle Leistung Heizen",
+    "currentPowerOutput": "HovalConnect live value: Aktuelle Leistung Station",
+}
+OPTIONAL_LIVE_SENSOR_KEYS = {"currentEnergyOutput", "currentPowerOutput"}
+ENERGY_RATIO_SENSOR_KEY = "total_performance_factor"
 
 # Source: API_TREE_LIVE_VALUES.
 # These keys are returned as live-value rows for a specific circuitPath and
@@ -46,6 +52,8 @@ LIVE_SENSORS = {
         ("operatingHours",       "operating_hours",          "h",                       None,                          SensorStateClass.TOTAL_INCREASING),
         ("operationCycles",      "operation_cycles",         None,                      None,                          SensorStateClass.TOTAL_INCREASING),
         ("operatingHoursOver50", "operating_hours_over_50",  "h",                       None,                          SensorStateClass.TOTAL_INCREASING),
+        ("currentEnergyOutput",  "current_energy_output",    UnitOfPower.KILO_WATT,     SensorDeviceClass.POWER,       SensorStateClass.MEASUREMENT),
+        ("currentPowerOutput",   "current_power_output",     UnitOfPower.KILO_WATT,     SensorDeviceClass.POWER,       SensorStateClass.MEASUREMENT),
         ("heatAmount",           "heat_amount",              UnitOfEnergy.KILO_WATT_HOUR, SensorDeviceClass.ENERGY,    SensorStateClass.TOTAL_INCREASING),
         ("totalEnergy",          "total_electrical_energy",  UnitOfEnergy.KILO_WATT_HOUR, SensorDeviceClass.ENERGY,    SensorStateClass.TOTAL_INCREASING),
         ("faStatus",             "plant_status",             None,                      None,                          None),
@@ -136,7 +144,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
             )
 
         # Source: API_TREE_LIVE_VALUES. Live-value rows are fetched per circuit.
+        live_values = coordinator.data.get("live_values", {}).get(path, {})
         for key, translation_key, unit, dev_class, state_class in LIVE_SENSORS.get(ctype, []):
+            if key in OPTIONAL_LIVE_SENSOR_KEYS and key not in live_values:
+                continue
             entities.append(
                 HovalLiveSensor(
                     coordinator,
@@ -149,6 +160,16 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     unit,
                     dev_class,
                     state_class,
+                    hass.config.language,
+                )
+            )
+        if ctype == "BL" and {"heatAmount", "totalEnergy"} <= set(live_values):
+            entities.append(
+                HovalEnergyRatioSensor(
+                    coordinator,
+                    entry,
+                    plant_id,
+                    path,
                     hass.config.language,
                 )
             )
@@ -318,6 +339,13 @@ class HovalLiveSensor(CoordinatorEntity, SensorEntity):
                 "unit_conversion": "MWh to kWh",
                 "wfa_parameter": ENERGY_WFA_PARAMETERS.get(self._key),
             }
+        if self._key in POWER_SOURCE_LABELS:
+            return {
+                "raw_value": self._live_value(),
+                "raw_unit": "kW",
+                "api_tree": self._api_tree,
+                "source_label": POWER_SOURCE_LABELS.get(self._key),
+            }
         return None
 
     @property
@@ -367,6 +395,60 @@ class HovalStatusSensor(CoordinatorEntity, SensorEntity):
             "raw_status": c.get("circuitStatus"),
             "operation_mode": c.get("operationMode"),
             "has_error": c.get("hasError"),
+            "api_tree": self._api_tree,
+        }
+
+    @property
+    def device_info(self):
+        return circuit_device_info(
+            self.coordinator,
+            self._entry,
+            self._plant_id,
+            self._path,
+            self._hass_language,
+        )
+
+
+class HovalEnergyRatioSensor(CoordinatorEntity, SensorEntity):
+    """Derived total performance factor from cumulative heat/electrical energy."""
+
+    _api_tree = API_TREE_LIVE_VALUES
+    _attr_has_entity_name = True
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 2
+
+    def __init__(self, coordinator, entry, plant_id, path, hass_language):
+        super().__init__(coordinator)
+        self._entry = entry
+        self._hass_language = hass_language
+        self._plant_id = plant_id
+        self._path = path
+        self._attr_unique_id = f"hoval_{plant_id}_{path}_{ENERGY_RATIO_SENSOR_KEY}"
+        apply_entity_name(self, entry, ENERGY_RATIO_SENSOR_KEY)
+
+    def _live_values(self):
+        return self.coordinator.data.get("live_values", {}).get(self._path, {})
+
+    @property
+    def native_value(self):
+        values = self._live_values()
+        heat = _coerce_number(values.get("heatAmount"))
+        electrical = _coerce_number(values.get("totalEnergy"))
+        if not isinstance(heat, (int, float)) or not isinstance(electrical, (int, float)):
+            return None
+        if electrical <= 0:
+            return None
+        return round(float(heat) / float(electrical), 2)
+
+    @property
+    def extra_state_attributes(self):
+        values = self._live_values()
+        return {
+            "source": "heatAmount / totalEnergy",
+            "source_note": "Cumulative working/performance factor, not instantaneous COP",
+            "heat_amount_raw": values.get("heatAmount"),
+            "total_electrical_energy_raw": values.get("totalEnergy"),
+            "raw_unit": "MWh",
             "api_tree": self._api_tree,
         }
 

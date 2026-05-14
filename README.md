@@ -74,11 +74,13 @@ Exact entities depend on what the Hoval cloud returns for your plant.
 - Heat generator target temperature / `Wärmeerzeuger Soll`
 - Return temperature / `Rücklauftemp.`
 - Compressor modulation / `Modulation`
+- Current heat output / `Aktuelle Wärmeleistung`
 - Operating hours / `Betriebsstunden`
 - Operating hours over 50% / `Betriebsstunden > 50%`
 - Switching cycles / `Schaltzyklen`
 - Heat output energy / `Wärmeabgabe`
 - Inverter energy use / `Stromverbrauch Inverter`
+- Total performance factor / `Arbeitszahl gesamt`
 
 ### Heating Circuit
 

@@ -94,6 +94,15 @@
       "operating_hours_over_50": {
         "name": "Operating hours > 50%"
       },
+      "current_energy_output": {
+        "name": "Current heat output"
+      },
+      "current_power_output": {
+        "name": "Actual power station"
+      },
+      "total_performance_factor": {
+        "name": "Total performance factor"
+      },
       "error_code": {
         "name": "Operating status"
       },

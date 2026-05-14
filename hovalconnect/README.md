@@ -29,7 +29,9 @@ During integration setup you can choose **System**, **Deutsch**, or **English** 
 
 The integration is actively tested with my Hoval Belaria setup. It groups
 entities by plant, heat pump, heating circuit, and hot water, exposes heat
-output and inverter energy use as `kWh` energy sensors, and maps WFA-200
+output and inverter energy use as `kWh` energy sensors, exposes current heat
+output as a `kW` power sensor, exposes the cumulative heat/electrical energy
+ratio as a total performance factor, and maps WFA-200
 operating status codes to readable German/English status names.
 
 License: GPL-3.0-only starting with version 1.0.0.

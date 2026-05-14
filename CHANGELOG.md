@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1] – 2026-05-14
+
+### Energy
+
+- Add the live `currentEnergyOutput` value as a `kW` power sensor named `Aktuelle Wärmeleistung` / `Current heat output`.
+- Derive `Arbeitszahl gesamt` / `Total performance factor` from the cumulative `heatAmount / totalEnergy` counters.
+
 ## [1.0.0] – 2026-05-02
 
 ### Release
