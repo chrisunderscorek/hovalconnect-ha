@@ -1,6 +1,6 @@
 # HA-0002 Device and Entity Grouping
 
-Status: implemented locally
+Status: released in 0.2.2
 
 ## User Story
 

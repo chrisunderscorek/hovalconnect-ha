@@ -130,7 +130,7 @@ the HovalConnect cloud API appears to allow changing:
 Readout, device grouping, localization, energy counters, and status mapping are
 the actively tested parts of this integration. Write support is planned but has
 not been practically tested on the supported Belaria setup yet. Treat target
-temperature and program writes as not supported for normal use in `1.0.0`, even
+temperature and program writes as not supported for normal use yet, even
 though the control entities are already present in Home Assistant.
 
 ## Installation

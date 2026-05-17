@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0] – 2026-05-18
+
+### Release
+
+- Promote the tested `1.0.2` current-output and installer fixes into the next stable release line.
+- Add German README documentation alongside the English README and document all helper tools in both languages.
+- Refresh Home Assistant documentation screenshots and add history examples for current heating output and heat generator status.
+- Add upstream attribution notice and clarify that the API snapshot is an observed capture, not official Hoval documentation.
+
 ## [1.0.2] – 2026-05-17
 
 ### Sensors

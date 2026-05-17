@@ -137,8 +137,8 @@ die die HovalConnect Cloud-API offenbar ändern kann:
 Auslesen, Gerätegruppierung, Lokalisierung, Energiezähler und Statusmapping
 sind die aktiv getesteten Teile dieser Integration. Schreibunterstützung ist
 geplant, wurde aber auf dem unterstützten Belaria-Setup noch nicht praktisch
-getestet. Solltemperatur- und Programm-Schreibzugriffe sollten in `1.0.0` nicht
-als für den normalen Betrieb unterstützt betrachtet werden, auch wenn die
+getestet. Solltemperatur- und Programm-Schreibzugriffe sollten noch nicht als
+für den normalen Betrieb unterstützt betrachtet werden, auch wenn die
 Control-Entitäten bereits in Home Assistant vorhanden sind.
 
 ## Installation
