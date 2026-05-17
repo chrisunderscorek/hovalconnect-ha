@@ -46,7 +46,7 @@
       "operating_hours":          {"name": "Betriebsstunden"},
       "operation_cycles":         {"name": "Schaltzyklen"},
       "operating_hours_over_50":  {"name": "Betriebsstunden > 50%"},
-      "current_energy_output":    {"name": "Aktuelle Wärmeleistung"},
+      "current_energy_output":    {"name": "Aktuelle Leistung Heizen"},
       "current_power_output":     {"name": "Aktuelle Leistung Station"},
       "total_performance_factor": {"name": "Arbeitszahl gesamt"},
       "error_code":               {"name": "Betriebsstatus"},

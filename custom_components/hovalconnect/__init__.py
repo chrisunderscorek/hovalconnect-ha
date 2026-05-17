@@ -206,10 +206,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                                 lv_err,
                             )
 
-                # The WFA operating status code is not always part of the
+                # Some heat-generator values are not always part of the
                 # live-values response. The read-only business detail tree
-                # exposes the internal status datapoint (*.2053), which we
-                # use as a fallback for the localized Betriebsstatus sensor.
+                # exposes stable internal datapoints used as fallbacks, e.g.
+                # Betriebsstatus (*.2053) and Aktuelle Leistung Heizen (*.29051).
                 if ctype == "BL":
                     try:
                         detail = await api.get_business_circuit_detail(plant_id, path)

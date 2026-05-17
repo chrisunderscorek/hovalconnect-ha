@@ -95,7 +95,7 @@
         "name": "Betriebsstunden > 50%"
       },
       "current_energy_output": {
-        "name": "Aktuelle Wärmeleistung"
+        "name": "Aktuelle Leistung Heizen"
       },
       "current_power_output": {
         "name": "Aktuelle Leistung Station"

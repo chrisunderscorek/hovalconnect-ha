@@ -95,7 +95,7 @@
         "name": "Operating hours > 50%"
       },
       "current_energy_output": {
-        "name": "Current heat output"
+        "name": "Current output heating"
       },
       "current_power_output": {
         "name": "Actual power station"

@@ -16,6 +16,7 @@ API_TREE_CIRCUITS = "GET /v3/plants/{plant_id}/circuits"
 API_TREE_LIVE_VALUES = "GET /v3/api/statistics/live-values/{plant_id}"
 API_TREE_BUSINESS_CIRCUIT_DETAIL = "GET /v2/business/plants/{plant_id}/circuits/{path}"
 WFA_OPERATING_STATUS_SUFFIX = ".2053"
+CURRENT_ENERGY_OUTPUT_SUFFIX = ".29051"
 ENERGY_MWH_TO_KWH_KEYS = {"heatAmount", "totalEnergy"}
 MODULATION_INACTIVE_STATUSES = {"off", "standby", "idle", "waiting", "wait", "ready"}
 MODULATION_INACTIVE_OPERATING_STATUS_CODES = {0, 3, 16, 17, 18, 19}
@@ -27,7 +28,7 @@ POWER_SOURCE_LABELS = {
     "currentEnergyOutput": "HovalConnect live value: Aktuelle Leistung Heizen",
     "currentPowerOutput": "HovalConnect live value: Aktuelle Leistung Station",
 }
-OPTIONAL_LIVE_SENSOR_KEYS = {"currentEnergyOutput", "currentPowerOutput"}
+OPTIONAL_LIVE_SENSOR_KEYS = {"currentPowerOutput"}
 ENERGY_RATIO_SENSOR_KEY = "total_performance_factor"
 
 # Source: API_TREE_LIVE_VALUES.
@@ -250,7 +251,14 @@ class HovalLiveSensor(CoordinatorEntity, SensorEntity):
             self._attr_force_update = True
 
     def _live_value(self):
-        return self.coordinator.data.get("live_values", {}).get(self._path, {}).get(self._key)
+        value = self.coordinator.data.get("live_values", {}).get(self._path, {}).get(self._key)
+        if value is None and self._key == "currentEnergyOutput":
+            # The official app calls this "Aktuelle Leistung Heizen". Hoval's
+            # cloud often publishes it as a live-value key, but inactive phases
+            # can omit that key during setup. The business-detail datapoint
+            # keeps the HA entity stable and usually reports 0.0 kW in that case.
+            return self._business_value(CURRENT_ENERGY_OUTPUT_SUFFIX)
+        return value
 
     def _business_detail(self):
         return self.coordinator.data.get("business_details", {}).get(self._path, {})
@@ -340,12 +348,18 @@ class HovalLiveSensor(CoordinatorEntity, SensorEntity):
                 "wfa_parameter": ENERGY_WFA_PARAMETERS.get(self._key),
             }
         if self._key in POWER_SOURCE_LABELS:
-            return {
+            live_value = self.coordinator.data.get("live_values", {}).get(self._path, {}).get(self._key)
+            attrs = {
                 "raw_value": self._live_value(),
                 "raw_unit": "kW",
                 "api_tree": self._api_tree,
                 "source_label": POWER_SOURCE_LABELS.get(self._key),
             }
+            if self._key == "currentEnergyOutput":
+                attrs["business_datapoint"] = f"{self._path}{CURRENT_ENERGY_OUTPUT_SUFFIX}"
+                if live_value is None:
+                    attrs["api_tree"] = API_TREE_BUSINESS_CIRCUIT_DETAIL
+            return attrs
         return None
 
     @property

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2] - 2026-05-17
+
+### Sensors
+
+- Always create the `currentEnergyOutput` power sensor and fall back to the `*.29051` business-detail datapoint when the live-value key is temporarily missing.
+- Rename the sensor to match the Hoval app label: `Aktuelle Leistung Heizen` / `Current output heating`.
+
 ## [1.0.1] - 2026-05-14
 
 ### Energy
