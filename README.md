@@ -286,3 +286,4 @@ GPL-3.0-only. See [LICENSE](LICENSE).
 
 Versions up to and including `v0.2.2` were published under the MIT License.
 Starting with `v1.0.0`, this project is distributed under GPL-3.0-only.
+See [NOTICE.md](NOTICE.md) for upstream attribution and retained MIT notices.
