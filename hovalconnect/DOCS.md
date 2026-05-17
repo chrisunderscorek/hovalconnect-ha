@@ -49,6 +49,10 @@ The WFA-200 operating status sensor uses the WFA-200 status table, for example `
 
 Example Home Assistant device view with German labels:
 
+For the actively tested Belaria setup, Home Assistant exposes the values shown
+in the HovalConnect app and additionally derives `Arbeitszahl gesamt` / COP from
+heat output and inverter energy.
+
 | Temperature cards | Heating circuit |
 | --- | --- |
 | ![Hoval temperature cards in Home Assistant](../docs/images/hoval-ha-climate.png) | ![Hoval heating circuit entities in Home Assistant](../docs/images/hoval-ha-heating-circuit.png) |
@@ -56,6 +60,13 @@ Example Home Assistant device view with German labels:
 | Heat pump / heat generator | Hot water |
 | --- | --- |
 | ![Hoval heat pump entities in Home Assistant](../docs/images/hoval-ha-heat-pump.png) | ![Hoval hot water entities in Home Assistant](../docs/images/hoval-ha-hot-water.png) |
+
+The history views show how the heat generator output and status change over the
+day:
+
+| Current output heating | Heat generator status |
+| --- | --- |
+| ![History of current output heating in Home Assistant](../docs/images/hoval-ha-history-current-output-heating.png) | ![History of heat generator status in Home Assistant](../docs/images/hoval-ha-history-heat-generator-status.png) |
 
 ## Network and Security
 
