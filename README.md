@@ -1,5 +1,7 @@
 # Hoval Connect for Home Assistant
 
+[Deutsche Version](README.de.md)
+
 [![Version](https://img.shields.io/github/v/release/chrisunderscorek/hovalconnect-ha?label=version)](https://github.com/chrisunderscorek/hovalconnect-ha/releases)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
 [![License](https://img.shields.io/badge/license-GPL--3.0--only-blue)](LICENSE)
