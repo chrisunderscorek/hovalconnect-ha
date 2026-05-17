@@ -282,8 +282,8 @@ Die Integration verwendet diese Bereiche der Hoval Cloud:
 GET https://azure-iot-prod.hoval.com/core/v3/api-docs
 ```
 
-Der Snapshot ist für die Entwicklung hilfreich, aber kein offizieller Vertrag
-von Hoval.
+Der Snapshot ist nur eine Momentaufnahme der aktuell beobachteten API und keine
+offizielle Hoval-Dokumentation.
 
 ## Debug-Tools
 

@@ -267,8 +267,8 @@ The integration uses these Hoval cloud areas:
 GET https://azure-iot-prod.hoval.com/core/v3/api-docs
 ```
 
-The snapshot is useful for development, but it is not an official contract from
-Hoval.
+The snapshot is only a capture of the currently observed API and not official
+Hoval documentation.
 
 ## Debug Tools
 
