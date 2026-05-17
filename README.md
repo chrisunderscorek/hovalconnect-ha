@@ -19,7 +19,7 @@ through the HovalConnect app, with WFA-200 operating status data and the usual
 heat pump, heating circuit, and hot water circuits.
 
 Other HovalConnect-compatible heat pumps may work, but they are best-effort
-until somebody tests them and reports the available circuits and values.
+until somebody tests them and reports the available names and values.
 
 ## What It Does
 
@@ -273,12 +273,24 @@ Hoval.
 ## Debug Tools
 
 The `tools/` directory contains local helper scripts for development and HAOS
-checks. The most useful ones are:
+checks. More detailed usage examples are in
+[tools/README.en.md](tools/README.en.md).
 
-- `tools/debug_hoval_auth.py`: token and API probing.
+- `tools/build_push_ghcr_app.sh`: build and push multi-arch HAOS app images to
+  GHCR.
+- `tools/publish_pretest_config_only.sh`: publish only
+  `hovalconnect/config.yaml` to the remote `main` branch for HA Store discovery
+  during pretests.
+- `tools/pretest_ha_app_release.sh`: run the normal local pretest flow: build
+  images, publish the config-only app version, then update/start the app on
+  HAOS.
+- `tools/update_ha_app_on_haos.sh`: reload the HA Store, update/start the
+  one-shot app on HAOS, wait for the copied integration version, and optionally
+  restart Home Assistant Core.
 - `tools/check_ha_app_on_haos.sh`: check app and installed integration versions
-  on HAOS.
-- `tools/update_ha_app_on_haos.sh`: update/start the one-shot app on HAOS.
+  on HAOS and print a reusable JSON result.
+- `tools/debug_hoval_auth.py`: local Hoval OAuth/token, store-version, and API
+  probing helper.
 - `tools/analyze_ha_history_availability.py`: inspect a locally copied Home
   Assistant recorder database for `unavailable` phases.
 
@@ -287,7 +299,7 @@ Do not commit tokens, Home Assistant recorder databases, or private API output.
 ## Known Limits
 
 - Only my Belaria setup is actively supported and tested.
-- Other HovalConnect plants may expose different circuit names or values.
+- Other HovalConnect plants may expose different names or values.
 - The HovalConnect cloud API is unofficial and may change without notice.
 - Write actions for target temperatures and program selection are planned but
   not practically tested yet.

@@ -20,7 +20,7 @@ HovalConnect App gebaut und getestet, inklusive WFA-200-Betriebsstatusdaten und
 den üblichen Kreisen für Wärmepumpe, Heizkreis und Warmwasser.
 
 Andere HovalConnect-kompatible Wärmepumpen können funktionieren, bleiben aber
-Best-Effort, bis jemand sie testet und die verfügbaren Kreise und Werte
+Best-Effort, bis jemand sie testet und die verfügbaren Namen und Werte
 meldet.
 
 ## Was die Integration macht
@@ -288,12 +288,23 @@ von Hoval.
 ## Debug-Tools
 
 Das Verzeichnis `tools/` enthält lokale Hilfsskripte für Entwicklung und
-HAOS-Checks. Die wichtigsten sind:
+HAOS-Checks. Ausführlichere Beispiele stehen in
+[tools/README.md](tools/README.md).
 
-- `tools/debug_hoval_auth.py`: Token- und API-Probing.
+- `tools/build_push_ghcr_app.sh`: Multi-Arch-HAOS-App-Images bauen und nach
+  GHCR pushen.
+- `tools/publish_pretest_config_only.sh`: nur `hovalconnect/config.yaml` auf
+  den Remote-Branch `main` pushen, damit der HA Store Pretest-Versionen findet.
+- `tools/pretest_ha_app_release.sh`: den normalen lokalen Pretest-Flow
+  ausführen: Images bauen, die Config-only-App-Version veröffentlichen und die
+  App auf HAOS aktualisieren/starten.
+- `tools/update_ha_app_on_haos.sh`: den HA Store neu laden, die One-Shot-App
+  auf HAOS aktualisieren/starten, auf die kopierte Integrationsversion warten
+  und optional Home Assistant Core neu starten.
 - `tools/check_ha_app_on_haos.sh`: App- und installierte Integrationsversion
-  auf HAOS prüfen.
-- `tools/update_ha_app_on_haos.sh`: One-Shot-App auf HAOS aktualisieren/starten.
+  auf HAOS prüfen und ein weiterverwendbares JSON-Ergebnis ausgeben.
+- `tools/debug_hoval_auth.py`: lokaler Hoval OAuth-/Token-, Store-Version- und
+  API-Probing-Helper.
 - `tools/analyze_ha_history_availability.py`: eine lokal kopierte
   Home-Assistant-Recorder-Datenbank auf `unavailable`-Phasen untersuchen.
 
@@ -303,7 +314,7 @@ committen.
 ## Bekannte Grenzen
 
 - Nur mein Belaria-Setup wird aktiv unterstützt und getestet.
-- Andere HovalConnect-Anlagen können andere Kreisnamen oder Werte liefern.
+- Andere HovalConnect-Anlagen können andere Namen oder Werte liefern.
 - Die HovalConnect Cloud-API ist inoffiziell und kann sich ohne Ankündigung
   ändern.
 - Schreibaktionen für Solltemperaturen und Programmauswahl sind geplant, aber
