@@ -7,6 +7,12 @@
 - Always create the `currentEnergyOutput` power sensor and fall back to the `*.29051` business-detail datapoint when the live-value key is temporarily missing.
 - Rename the sensor to match the Hoval app label: `Aktuelle Leistung Heizen` / `Current output heating`.
 
+### Installer
+
+- Align the bundled custom-component manifest version with the HAOS app version.
+- Store installer backups under `/config/hovalconnect_backups` instead of inside `/config/custom_components`.
+- Make the HAOS check fail if stale `hovalconnect.backup-*` directories exist under `/config/custom_components`.
+
 ## [1.0.1] – 2026-05-14
 
 ### Energy

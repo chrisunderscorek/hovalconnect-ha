@@ -6,7 +6,7 @@ This app installs the bundled Hoval Connect custom integration into the Home Ass
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `backup_existing` | `true` | Copies any existing `/config/custom_components/hovalconnect` directory to a timestamped backup before installing this version. |
+| `backup_existing` | `true` | Copies any existing `/config/custom_components/hovalconnect` directory to `/config/hovalconnect_backups/hovalconnect.backup-<timestamp>` before installing this version. |
 
 ## Usage
 

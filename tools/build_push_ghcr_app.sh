@@ -24,6 +24,7 @@ USAGE
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
 app_config="${repo_root}/hovalconnect/config.yaml"
+component_manifest="${repo_root}/custom_components/hovalconnect/manifest.json"
 
 read_config_value() {
     local key="$1"
@@ -36,6 +37,14 @@ read_config_value() {
     value="${value%\'}"
     value="${value#\'}"
     printf '%s\n' "${value}"
+}
+
+read_component_version() {
+    if [[ ! -f "${component_manifest}" ]]; then
+        printf '\n'
+        return
+    fi
+    python3 -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("version", ""))' "${component_manifest}"
 }
 
 version=""
@@ -98,6 +107,17 @@ fi
 
 if [[ -z "${version}" || -z "${image}" ]]; then
     echo "Could not determine image/version; pass --image and --version explicitly." >&2
+    exit 2
+fi
+
+component_version="$(read_component_version)"
+if [[ -z "${component_version}" ]]; then
+    echo "Could not determine custom component version from ${component_manifest}." >&2
+    exit 2
+fi
+if [[ "${component_version}" != "${version}" ]]; then
+    echo "Version mismatch: hovalconnect/config.yaml is ${version}, but custom_components/hovalconnect/manifest.json is ${component_version}." >&2
+    echo "Refusing to build an app image that would install a different integration version." >&2
     exit 2
 fi
 

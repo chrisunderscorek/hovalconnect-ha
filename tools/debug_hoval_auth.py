@@ -19,6 +19,8 @@ from dataclasses import dataclass
 
 AUTH_TOKEN_URL = "https://akwc5scsc.accounts.ondemand.com/oauth2/token"
 API_BASE_URL = "https://azure-iot-prod.hoval.com/core"
+# Public OAuth client_id of the official HovalConnect native app. This
+# identifies the app client at SAP IAS; it is not a client secret.
 CLIENT_ID = "991b54b2-7e67-47ef-81fe-572e21c59899"
 DEFAULT_SCOPE = "openid offline_access"
 DEFAULT_FRONTEND_APP_VERSION = "3.2.0"

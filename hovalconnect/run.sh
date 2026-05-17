@@ -5,6 +5,7 @@ set -euo pipefail
 SOURCE_DIR="/app/custom_components/hovalconnect"
 TARGET_ROOT="/config/custom_components"
 TARGET_DIR="${TARGET_ROOT}/hovalconnect"
+BACKUP_ROOT="/config/hovalconnect_backups"
 TEMP_DIR=""
 BACKUP_EXISTING="true"
 
@@ -29,9 +30,10 @@ if [[ -f "/data/options.json" ]] \
 fi
 
 mkdir -p "${TARGET_ROOT}"
+mkdir -p "${BACKUP_ROOT}"
 
 if [[ -d "${TARGET_DIR}" && "${BACKUP_EXISTING}" == "true" ]]; then
-    backup_dir="${TARGET_DIR}.backup-$(date -u +%Y%m%d%H%M%S)"
+    backup_dir="${BACKUP_ROOT}/hovalconnect.backup-$(date -u +%Y%m%d%H%M%S)"
     bashio::log.info "Backing up existing integration to ${backup_dir}"
     cp -a "${TARGET_DIR}" "${backup_dir}"
 fi

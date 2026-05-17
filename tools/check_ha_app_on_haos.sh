@@ -139,6 +139,7 @@ fi
 "${ssh_cmd[@]}" "ha store --raw-json" > "${tmp_dir}/store.json"
 "${ssh_cmd[@]}" "ha apps --raw-json" > "${tmp_dir}/apps.json"
 "${ssh_cmd[@]}" "if [ -f '/config/custom_components/${domain}/manifest.json' ]; then cat '/config/custom_components/${domain}/manifest.json'; else printf '{}'; fi" > "${tmp_dir}/component_manifest.json"
+"${ssh_cmd[@]}" "find '/config/custom_components' -maxdepth 1 -type d -name '${domain}.backup-*' -print 2>/dev/null || true" > "${tmp_dir}/component_backup_dirs.txt"
 
 CHECK_HOST="${host}" \
 CHECK_TARGET="${ssh_target}" \
@@ -199,6 +200,11 @@ ha_info_payload = load_json(tmp / "ha_info.json")
 store_payload = load_json(tmp / "store.json")
 apps_payload = load_json(tmp / "apps.json")
 component_manifest = load_json(tmp / "component_manifest.json")
+component_backup_dirs = [
+    line.strip()
+    for line in (tmp / "component_backup_dirs.txt").read_text(encoding="utf-8", errors="replace").splitlines()
+    if line.strip()
+]
 
 ha_info = data(ha_info_payload)
 store = data(store_payload)
@@ -245,6 +251,7 @@ component = {
     "path": f"/config/custom_components/{domain}",
     "installed": isinstance(component_manifest, dict) and bool(component_manifest),
     "manifest": component_manifest if isinstance(component_manifest, dict) and component_manifest else None,
+    "backup_dirs_in_custom_components": component_backup_dirs,
 }
 
 if component["manifest"]:
@@ -265,6 +272,7 @@ checks = {
     "custom_component_installed": component["installed"],
     "custom_component_domain_matches": component["domain_matches"],
     "custom_component_version_matches": component["version"] == expected_version,
+    "no_custom_component_backup_dirs": not component_backup_dirs,
 }
 
 result = {
