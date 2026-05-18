@@ -16,7 +16,6 @@ permissions:
 
 env:
   IMAGE: ghcr.io/chrisunderscorek/hovalconnect-ha
-  VERSION: 0.2.0
 
 jobs:
   build:
@@ -33,6 +32,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Read app version
+        id: app_version
+        shell: bash
+        run: |
+          version="$(awk -F: '$1 == "version" { print $2; exit }' hovalconnect/config.yaml | tr -d ' "')"
+          if [[ -z "${version}" ]]; then
+            echo "Could not read version from hovalconnect/config.yaml" >&2
+            exit 1
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -57,16 +67,30 @@ jobs:
           provenance: false
           sbom: false
           build-args: |
-            BUILD_VERSION=${{ env.VERSION }}
+            BUILD_VERSION=${{ steps.app_version.outputs.version }}
             BUILD_ARCH=${{ matrix.hass_arch }}
           tags: |
-            ${{ env.IMAGE }}:${{ env.VERSION }}-${{ matrix.hass_arch }}
+            ${{ env.IMAGE }}:${{ steps.app_version.outputs.version }}-${{ matrix.hass_arch }}
 
   manifest:
     name: Publish multi-arch tags
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Read app version
+        id: app_version
+        shell: bash
+        run: |
+          version="$(awk -F: '$1 == "version" { print $2; exit }' hovalconnect/config.yaml | tr -d ' "')"
+          if [[ -z "${version}" ]]; then
+            echo "Could not read version from hovalconnect/config.yaml" >&2
+            exit 1
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -80,7 +104,7 @@ jobs:
       - name: Create manifests
         run: |
           docker buildx imagetools create \
-            -t "${IMAGE}:${VERSION}" \
+            -t "${IMAGE}:${{ steps.app_version.outputs.version }}" \
             -t "${IMAGE}:latest" \
-            "${IMAGE}:${VERSION}-amd64" \
-            "${IMAGE}:${VERSION}-aarch64"
+            "${IMAGE}:${{ steps.app_version.outputs.version }}-amd64" \
+            "${IMAGE}:${{ steps.app_version.outputs.version }}-aarch64"
