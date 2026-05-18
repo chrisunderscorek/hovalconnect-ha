@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.1] - Unreleased
+## [1.1.1] - 2026-05-18
 
 ### Plant
 
