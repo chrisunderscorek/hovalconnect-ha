@@ -10,7 +10,7 @@ arch:
 startup: once
 boot: manual
 init: false
-stage: experimental
+stage: stable
 map:
   - type: homeassistant_config
     read_only: false
