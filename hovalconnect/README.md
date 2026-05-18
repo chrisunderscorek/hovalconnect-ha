@@ -31,7 +31,8 @@ The integration is actively tested with my Hoval Belaria setup. It groups
 entities by plant, heat pump, heating circuit, and hot water, exposes heat
 output and inverter energy use as `kWh` energy sensors, exposes `Aktuelle
 Leistung Heizen` / `Current output heating` as a `kW` power sensor, exposes the
-cumulative heat/electrical energy ratio as a total performance factor, and maps WFA-200
-operating status codes to readable German/English status names.
+cumulative heat/electrical energy ratio as a total performance factor, maps
+WFA-200 operating status codes to readable German/English status names, and
+shows plant-level online, active-event, and weather forecast values.
 
 License: GPL-3.0-only starting with version 1.0.0.

@@ -53,6 +53,11 @@ ENTITY_NAMES: dict[str, dict[str, str]] = {
         "bl_status": "Status Wärmeerzeuger",
         "hk_active_program": "Akt. Heizkreisprog.",
         "ww_active_program": "Akt. Warmwasserprog.",
+        "plant_online": "Online",
+        "active_event": "Aktive Ereignisse",
+        "forecast_outside_temperature": "Prognose Außentemp.",
+        "forecast_outside_temperature_min": "Prognose Außentemp. min.",
+        "weather_forecast": "Wetterprognose",
     },
     LANGUAGE_EN: {
         "hk_circuit_temp_actual": "Room temp. actual",
@@ -86,6 +91,11 @@ ENTITY_NAMES: dict[str, dict[str, str]] = {
         "bl_status": "Heat generator status",
         "hk_active_program": "Heating circuit prog.",
         "ww_active_program": "Hot water prog.",
+        "plant_online": "Online",
+        "active_event": "Active events",
+        "forecast_outside_temperature": "Forecast outdoor temp.",
+        "forecast_outside_temperature_min": "Forecast outdoor temp. min.",
+        "weather_forecast": "Weather forecast",
     },
 }
 
@@ -204,6 +214,72 @@ OPERATING_STATUS_ALIASES = {
     "abtauen": 8,
 }
 
+ONLINE_VALUES = {
+    LANGUAGE_DE: {
+        True: "Online",
+        False: "Offline",
+    },
+    LANGUAGE_EN: {
+        True: "Online",
+        False: "Offline",
+    },
+}
+
+NO_ACTIVE_EVENT_VALUES = {
+    LANGUAGE_DE: "Keine",
+    LANGUAGE_EN: "None",
+}
+
+EVENT_TYPE_VALUES = {
+    LANGUAGE_DE: {
+        "locking": "Sperrend",
+        "blocking": "Blockierend",
+        "warning": "Warnung",
+        "info": "Info",
+        "offline": "Offline",
+        "ok": "OK",
+    },
+    LANGUAGE_EN: {
+        "locking": "Locking",
+        "blocking": "Blocking",
+        "warning": "Warning",
+        "info": "Info",
+        "offline": "Offline",
+        "ok": "OK",
+    },
+}
+
+WEATHER_TYPE_VALUES = {
+    LANGUAGE_DE: {
+        "sun": "Sonne",
+        "partialCloud": "Teilweise bewölkt",
+        "cloud": "Bewölkt",
+        "cloudSunRain": "Sonne/Regen",
+        "lightRain": "Leichter Regen",
+        "heavyRain": "Starker Regen",
+        "cloudSunSnow": "Sonne/Schnee",
+        "lightSnow": "Leichter Schnee",
+        "heavySnow": "Starker Schnee",
+        "cloudSunSnowRain": "Schneeregen",
+        "thunderStorm": "Gewitter",
+        "fog": "Nebel",
+    },
+    LANGUAGE_EN: {
+        "sun": "Sun",
+        "partialCloud": "Partly cloudy",
+        "cloud": "Cloudy",
+        "cloudSunRain": "Sun/rain",
+        "lightRain": "Light rain",
+        "heavyRain": "Heavy rain",
+        "cloudSunSnow": "Sun/snow",
+        "lightSnow": "Light snow",
+        "heavySnow": "Heavy snow",
+        "cloudSunSnowRain": "Sleet",
+        "thunderStorm": "Thunderstorm",
+        "fog": "Fog",
+    },
+}
+
 
 def configured_language(entry: ConfigEntry) -> str:
     """Return the language explicitly configured for this integration."""
@@ -304,6 +380,55 @@ def localized_operating_status_value(
         return raw_status
 
     return OPERATING_STATUS_VALUES[effective_language(entry, hass_language)].get(status_code, raw_status)
+
+
+def localized_online_value(
+    entry: ConfigEntry,
+    online: bool | None,
+    hass_language: str | None = None,
+) -> str | None:
+    """Return the localized plant online state."""
+    if online is None:
+        return None
+    return ONLINE_VALUES[effective_language(entry, hass_language)].get(bool(online))
+
+
+def localized_no_active_event_value(
+    entry: ConfigEntry,
+    hass_language: str | None = None,
+) -> str:
+    """Return the localized value for a plant without active events."""
+    return NO_ACTIVE_EVENT_VALUES[effective_language(entry, hass_language)]
+
+
+def localized_event_type_value(
+    entry: ConfigEntry,
+    raw_event_type: str | None,
+    hass_language: str | None = None,
+) -> str | None:
+    """Return a localized plant event type while keeping unknown values raw."""
+    if raw_event_type is None:
+        return None
+
+    event_type = str(raw_event_type).strip()
+    if not event_type:
+        return None
+    return EVENT_TYPE_VALUES[effective_language(entry, hass_language)].get(event_type, raw_event_type)
+
+
+def localized_weather_type_value(
+    entry: ConfigEntry,
+    raw_weather_type: str | None,
+    hass_language: str | None = None,
+) -> str | None:
+    """Return a localized weather type while keeping unknown values raw."""
+    if raw_weather_type is None:
+        return None
+
+    weather_type = str(raw_weather_type).strip()
+    if not weather_type:
+        return None
+    return WEATHER_TYPE_VALUES[effective_language(entry, hass_language)].get(weather_type, raw_weather_type)
 
 
 def program_select_suffix(entry: ConfigEntry, hass_language: str | None = None) -> str:

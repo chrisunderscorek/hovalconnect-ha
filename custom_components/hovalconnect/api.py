@@ -12,12 +12,15 @@ import aiohttp
 
 from .const import (
     API_CIRCUITS,
+    API_BUSINESS_IS_ONLINE,
     API_BUSINESS_CIRCUIT_DETAIL,
+    API_BUSINESS_LATEST_PLANT_EVENT,
     API_LIVE_VALUES,
     API_MY_PLANTS,
     API_PLANT_SETTINGS,
     API_SET_PROGRAM,
     API_TEMP_CHANGE,
+    API_WEATHER_FORECAST,
     AUTH_TOKEN_URL,
     CLIENT_ID,
     CONF_TOKEN_EXPIRES_AT,
@@ -627,6 +630,39 @@ class HovalConnectAPI:
             headers_factory=lambda: self._plant_headers(plant_token),
             empty_statuses={404, 417},
         )
+
+    async def get_plant_online(self, plant_id: str) -> bool | None:
+        """Read the plant online state shown by the Hoval business API."""
+        plant_token = await self._ensure_plant_token(plant_id)
+        data = await self._request_json(
+            "GET",
+            API_BUSINESS_IS_ONLINE.format(plant_id=plant_id),
+            headers_factory=lambda: self._plant_headers(plant_token),
+            empty_statuses={404},
+        )
+        return data if isinstance(data, bool) else None
+
+    async def get_latest_plant_event(self, plant_id: str) -> dict:
+        """Read the latest most critical open plant event, if any."""
+        plant_token = await self._ensure_plant_token(plant_id)
+        data = await self._request_json(
+            "GET",
+            API_BUSINESS_LATEST_PLANT_EVENT.format(plant_id=plant_id),
+            headers_factory=lambda: self._plant_headers(plant_token),
+            empty_statuses={404},
+        )
+        return data if isinstance(data, dict) else {}
+
+    async def get_weather_forecast(self, plant_id: str) -> list[dict]:
+        """Read the Hoval weather forecast for today and the next days."""
+        plant_token = await self._ensure_plant_token(plant_id)
+        data = await self._request_json(
+            "GET",
+            API_WEATHER_FORECAST.format(plant_id=plant_id),
+            headers_factory=lambda: self._plant_headers(plant_token),
+            empty_statuses={404},
+        )
+        return data if isinstance(data, list) else []
 
     async def set_temporary_change(self, plant_id: str, path: str, value: float, duration: str = "fourHours") -> None:
         """Temporary temperature change (weekly program continues)."""

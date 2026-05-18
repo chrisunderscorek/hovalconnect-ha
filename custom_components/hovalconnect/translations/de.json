@@ -141,6 +141,21 @@
       },
       "ww_active_program": {
         "name": "Akt. Warmwasserprog."
+      },
+      "plant_online": {
+        "name": "Online"
+      },
+      "active_event": {
+        "name": "Aktive Ereignisse"
+      },
+      "forecast_outside_temperature": {
+        "name": "Prognose Außentemp."
+      },
+      "forecast_outside_temperature_min": {
+        "name": "Prognose Außentemp. min."
+      },
+      "weather_forecast": {
+        "name": "Wetterprognose"
       }
     }
   }

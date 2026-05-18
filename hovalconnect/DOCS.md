@@ -37,13 +37,15 @@ again. The manual update flow is therefore:
 
 The integration language affects only Hoval Connect entity names and prog. labels. It can be changed later from **Settings > Devices & services > Hoval Connect > Configure** without changing the global Home Assistant language. German and English names follow the official HovalConnect app wording where known, including `Wärmeerzeuger-Ist`, `Vorlauftemp. Ist`, `Ist-Temp. SF1`, `Ist-Temp. SF2`, `Heat generator actual`, and `Flow temp. actual`.
 
-Readout, device grouping, localization, energy counters, and status mapping are the actively tested parts of this integration. Write support for target temperatures and program selection is planned but has not been practically tested on the supported Belaria setup yet. The control entities are already present in Home Assistant, but writes should not be treated as a supported `1.0.0` feature.
+Readout, device grouping, localization, energy counters, plant-level values, and status mapping are the actively tested parts of this integration. Write support for target temperatures and program selection is planned but has not been practically tested on the supported Belaria setup yet. The control entities are already present in Home Assistant, but writes should not be treated as supported for normal operation yet.
 
 The integration stores OAuth token data after setup. Email and password are only stored if you enable **Store email and password permanently** in the integration setup or re-authentication flow; otherwise Home Assistant will ask you to re-authenticate when the saved token can no longer be renewed. Token renewal is first attempted after half of the effective token lifetime. Failed renewal attempts are retried while the current token remains valid with a staged backoff: 3 attempts after 10 seconds, 3 attempts after 30 seconds, 3 attempts after 60 seconds, then every 120 seconds. If the token endpoint sends `Retry-After`, the integration waits at least that long.
 
 Energy counters for heat output and inverter energy use are exposed as Home Assistant `kWh` energy sensors. Hoval's cloud live values are converted from values that behave like `MWh` to `kWh`; the original raw value and inferred raw unit remain visible as sensor attributes. `Aktuelle Leistung Heizen` / `Current output heating` is exposed separately as a `kW` power sensor. The integration also derives `Arbeitszahl gesamt` / `Total performance factor` from `heatAmount / totalEnergy`; this is a cumulative working factor, not an instantaneous COP.
 
 The WFA-200 operating status sensor uses the WFA-200 status table, for example `0` becomes `WP aus` in German and `Heat pump off` in English. If the live-values response does not include `faStatus`, the integration falls back to the read-only business circuit detail datapoint `*.2053`.
+
+Plant-level values are attached to the plant device: `Online`, `Aktive Ereignisse` / `Active events`, `Prognose Außentemp.` / `Forecast outdoor temp.`, `Prognose Außentemp. min.` / `Forecast outdoor temp. min.`, and `Wetterprognose` / `Weather forecast`. These come from the Hoval business and weather endpoints, not from the circuit live-values tree.
 
 ## Screenshots
 

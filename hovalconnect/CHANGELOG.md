@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1] - Unreleased
+
+### Plant
+
+- Add plant-level sensors for online state, active events, forecast outdoor
+  temperature, forecast minimum outdoor temperature, and weather forecast.
+- Cache the last successful plant-level values during short endpoint failures
+  and expose fetch errors in coordinator diagnostics.
+
 ## [1.1.0] - 2026-05-18
 
 ### Release

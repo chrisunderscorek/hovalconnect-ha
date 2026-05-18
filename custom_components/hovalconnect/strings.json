@@ -61,7 +61,12 @@
       "ww_status":                {"name": "Status Warmwasser"},
       "bl_status":                {"name": "Status Wärmeerzeuger"},
       "hk_active_program":        {"name": "Akt. Heizkreisprog."},
-      "ww_active_program":        {"name": "Akt. Warmwasserprog."}
+      "ww_active_program":        {"name": "Akt. Warmwasserprog."},
+      "plant_online":             {"name": "Online"},
+      "active_event":             {"name": "Aktive Ereignisse"},
+      "forecast_outside_temperature":     {"name": "Prognose Außentemp."},
+      "forecast_outside_temperature_min": {"name": "Prognose Außentemp. min."},
+      "weather_forecast":         {"name": "Wetterprognose"}
     }
   }
 }

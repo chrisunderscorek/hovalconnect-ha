@@ -4,17 +4,24 @@ from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, Sen
 from homeassistant.const import UnitOfEnergy, UnitOfPower, UnitOfTemperature
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
-from .devices import circuit_device_info
+from .devices import circuit_device_info, plant_device_info
 from .localization import (
     active_program_value,
     apply_entity_name,
+    localized_event_type_value,
+    localized_no_active_event_value,
     localized_operating_status_value,
+    localized_online_value,
     localized_status_value,
+    localized_weather_type_value,
 )
 
 API_TREE_CIRCUITS = "GET /v3/plants/{plant_id}/circuits"
 API_TREE_LIVE_VALUES = "GET /v3/api/statistics/live-values/{plant_id}"
 API_TREE_BUSINESS_CIRCUIT_DETAIL = "GET /v2/business/plants/{plant_id}/circuits/{path}"
+API_TREE_BUSINESS_IS_ONLINE = "GET /business/plants/{plant_id}/is-online"
+API_TREE_BUSINESS_LATEST_PLANT_EVENT = "GET /business/plants/{plant_id}/plant-events/latest"
+API_TREE_WEATHER_FORECAST = "GET /v2/api/weather/forecast/{plant_id}"
 WFA_OPERATING_STATUS_SUFFIX = ".2053"
 CURRENT_ENERGY_OUTPUT_SUFFIX = ".29051"
 ENERGY_MWH_TO_KWH_KEYS = {"heatAmount", "totalEnergy"}
@@ -30,6 +37,13 @@ POWER_SOURCE_LABELS = {
 }
 OPTIONAL_LIVE_SENSOR_KEYS = {"currentPowerOutput"}
 ENERGY_RATIO_SENSOR_KEY = "total_performance_factor"
+PLANT_SENSOR_KEYS = (
+    "plant_online",
+    "active_event",
+    "forecast_outside_temperature",
+    "forecast_outside_temperature_min",
+    "weather_forecast",
+)
 
 # Source: API_TREE_LIVE_VALUES.
 # These keys are returned as live-value rows for a specific circuitPath and
@@ -98,6 +112,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = data["coordinator"]
     plant_id = data["plant_id"]
     entities = []
+
+    for key in PLANT_SENSOR_KEYS:
+        entities.append(HovalPlantSensor(coordinator, entry, plant_id, key, hass.config.language))
 
     for c in coordinator.data.get("circuits", []):
         path = c["path"]
@@ -212,6 +229,137 @@ class HovalCircuitTempSensor(CoordinatorEntity, SensorEntity):
             self._path,
             self._hass_language,
         )
+
+
+class HovalPlantSensor(CoordinatorEntity, SensorEntity):
+    """Sensor backed by plant-level business and weather API data."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator, entry, plant_id, key, hass_language):
+        super().__init__(coordinator)
+        self._entry = entry
+        self._hass_language = hass_language
+        self._plant_id = plant_id
+        self._key = key
+        self._attr_unique_id = f"hoval_{plant_id}_plant_{key}"
+        apply_entity_name(self, entry, key)
+        if key in ("forecast_outside_temperature", "forecast_outside_temperature_min"):
+            self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+            self._attr_device_class = SensorDeviceClass.TEMPERATURE
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+
+    def _plant_data(self):
+        return self.coordinator.data.get("plant", {})
+
+    def _latest_event(self):
+        latest_event = self._plant_data().get("latest_event")
+        if isinstance(latest_event, dict):
+            event = latest_event.get("plantEvent")
+            return event if isinstance(event, dict) else None
+        return None
+
+    def _forecast(self):
+        forecast = self._plant_data().get("weather_forecast")
+        return forecast if isinstance(forecast, list) else []
+
+    def _first_forecast(self):
+        for item in self._forecast():
+            if isinstance(item, dict):
+                return item
+        return {}
+
+    @property
+    def native_value(self):
+        if self._key == "plant_online":
+            return localized_online_value(
+                self._entry,
+                self._plant_data().get("online"),
+                self._hass_language,
+            )
+
+        if self._key == "active_event":
+            event = self._latest_event()
+            if event is None:
+                return localized_no_active_event_value(self._entry, self._hass_language)
+            return (
+                localized_event_type_value(self._entry, event.get("eventType"), self._hass_language)
+                or event.get("description")
+                or event.get("id")
+            )
+
+        forecast = self._first_forecast()
+        if self._key == "forecast_outside_temperature":
+            return _coerce_number(forecast.get("outsideTemperature"))
+        if self._key == "forecast_outside_temperature_min":
+            return _coerce_number(forecast.get("outsideTemperatureMin"))
+        if self._key == "weather_forecast":
+            return localized_weather_type_value(
+                self._entry,
+                forecast.get("weatherType"),
+                self._hass_language,
+            )
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        if self._key == "plant_online":
+            return {
+                "raw_online": self._plant_data().get("online"),
+                "api_tree": API_TREE_BUSINESS_IS_ONLINE,
+            }
+
+        if self._key == "active_event":
+            event = self._latest_event()
+            attrs = {
+                "api_tree": API_TREE_BUSINESS_LATEST_PLANT_EVENT,
+                "has_active_event": event is not None,
+            }
+            if event:
+                attrs.update(
+                    {
+                        "event_id": event.get("id"),
+                        "event_type": event.get("eventType"),
+                        "event_type_label": localized_event_type_value(
+                            self._entry,
+                            event.get("eventType"),
+                            self._hass_language,
+                        ),
+                        "error_code": event.get("errorCode"),
+                        "source": event.get("source"),
+                        "created_at": event.get("createdAt"),
+                        "pending_at": event.get("pendingAt"),
+                        "closed_at": event.get("closedAt"),
+                        "description": event.get("description"),
+                    }
+                )
+            return attrs
+
+        if self._key in (
+            "forecast_outside_temperature",
+            "forecast_outside_temperature_min",
+            "weather_forecast",
+        ):
+            forecast = self._first_forecast()
+            return {
+                "api_tree": API_TREE_WEATHER_FORECAST,
+                "forecast_time": forecast.get("_time"),
+                "weather_code": forecast.get("weatherCode"),
+                "weather_type": forecast.get("weatherType"),
+                "weather_type_label": localized_weather_type_value(
+                    self._entry,
+                    forecast.get("weatherType"),
+                    self._hass_language,
+                ),
+                "outside_temperature": forecast.get("outsideTemperature"),
+                "outside_temperature_min": forecast.get("outsideTemperatureMin"),
+                "forecast": self._forecast()[:3],
+            }
+        return None
+
+    @property
+    def device_info(self):
+        return plant_device_info(self._entry, self._plant_id, self._hass_language)
 
 
 class HovalLiveSensor(CoordinatorEntity, SensorEntity):

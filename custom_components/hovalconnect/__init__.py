@@ -149,12 +149,45 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
             previous_live_values = previous.get("live_values", {})
             previous_business_details = previous.get("business_details", {})
+            previous_plant = previous.get("plant", {})
             live_values = {}
             business_details = {}
+            plant = {}
             reused_live_values = []
             reused_business_details = []
+            reused_plant_values = []
             live_value_errors = {}
             business_detail_errors = {}
+            plant_errors = {}
+
+            async def _fetch_plant_value(name, fetcher):
+                result = {
+                    "name": name,
+                    "value": None,
+                    "reused": False,
+                    "error": None,
+                }
+                try:
+                    result["value"] = await fetcher()
+                except Exception as err:
+                    result["error"] = str(err)
+                    if name in previous_plant:
+                        result["value"] = previous_plant[name]
+                        result["reused"] = True
+                        _LOGGER.warning(
+                            "Plant value %s fetch failed for %s; keeping previous value: %s",
+                            name,
+                            plant_id,
+                            err,
+                        )
+                    else:
+                        _LOGGER.warning(
+                            "Plant value %s fetch failed for %s without previous value: %s",
+                            name,
+                            plant_id,
+                            err,
+                        )
+                return result
 
             async def _fetch_circuit_data(c):
                 path = c.get("path", "")
@@ -238,7 +271,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                             )
                 return result
 
-            results = await asyncio.gather(*(_fetch_circuit_data(c) for c in circuits))
+            circuit_results_task = asyncio.gather(*(_fetch_circuit_data(c) for c in circuits))
+            plant_results_task = asyncio.gather(
+                _fetch_plant_value("online", lambda: api.get_plant_online(plant_id)),
+                _fetch_plant_value("latest_event", lambda: api.get_latest_plant_event(plant_id)),
+                _fetch_plant_value("weather_forecast", lambda: api.get_weather_forecast(plant_id)),
+            )
+
+            results = await circuit_results_task
+            plant_results = await plant_results_task
             for result in results:
                 path = result["path"]
                 if not path:
@@ -256,18 +297,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 if result["business_error"]:
                     business_detail_errors[f"{path}/{result['ctype']}"] = result["business_error"]
 
+            for result in plant_results:
+                name = result["name"]
+                plant[name] = result["value"]
+                if result["reused"]:
+                    reused_plant_values.append(name)
+                if result["error"]:
+                    plant_errors[name] = result["error"]
+
             return {
                 "circuits": circuits,
                 "live_values": live_values,
                 "business_details": business_details,
+                "plant": plant,
                 "plant_id": plant_id,
                 "fetch_stats": {
-                    "stale": bool(reused_live_values or reused_business_details),
+                    "stale": bool(reused_live_values or reused_business_details or reused_plant_values),
                     "duration_ms": round((time.monotonic() - started) * 1000),
                     "reused_live_values": reused_live_values,
                     "reused_business_details": reused_business_details,
+                    "reused_plant_values": reused_plant_values,
                     "live_value_errors": live_value_errors,
                     "business_detail_errors": business_detail_errors,
+                    "plant_errors": plant_errors,
                 },
             }
         except HovalAuthError as err:

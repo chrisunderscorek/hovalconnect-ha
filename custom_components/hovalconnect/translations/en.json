@@ -141,6 +141,21 @@
       },
       "ww_active_program": {
         "name": "Hot water prog."
+      },
+      "plant_online": {
+        "name": "Online"
+      },
+      "active_event": {
+        "name": "Active events"
+      },
+      "forecast_outside_temperature": {
+        "name": "Forecast outdoor temp."
+      },
+      "forecast_outside_temperature_min": {
+        "name": "Forecast outdoor temp. min."
+      },
+      "weather_forecast": {
+        "name": "Weather forecast"
       }
     }
   }
