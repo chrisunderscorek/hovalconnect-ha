@@ -10,6 +10,10 @@ on:
       - hovalconnect/**
   workflow_dispatch:
 
+concurrency:
+  group: publish-ghcr-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   packages: write
@@ -18,9 +22,35 @@ env:
   IMAGE: ghcr.io/chrisunderscorek/hovalconnect-ha
 
 jobs:
+  metadata:
+    name: Read release metadata
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Read and validate app version
+        id: version
+        shell: bash
+        run: |
+          app_version="$(awk -F: '$1 == "version" { print $2; exit }' hovalconnect/config.yaml | tr -d ' "')"
+          manifest_version="$(python3 -c 'import json; print(json.load(open("custom_components/hovalconnect/manifest.json", encoding="utf-8")).get("version", ""))')"
+          if [[ -z "${app_version}" ]]; then
+            echo "Could not read version from hovalconnect/config.yaml" >&2
+            exit 1
+          fi
+          if [[ "${app_version}" != "${manifest_version}" ]]; then
+            echo "Version mismatch: hovalconnect/config.yaml is ${app_version}, manifest.json is ${manifest_version}" >&2
+            exit 1
+          fi
+          echo "version=${app_version}" >> "${GITHUB_OUTPUT}"
+
   build:
     name: Build ${{ matrix.hass_arch }}
     runs-on: ubuntu-latest
+    needs: metadata
     strategy:
       fail-fast: false
       matrix:
@@ -32,17 +62,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
-      - name: Read app version
-        id: app_version
-        shell: bash
-        run: |
-          version="$(awk -F: '$1 == "version" { print $2; exit }' hovalconnect/config.yaml | tr -d ' "')"
-          if [[ -z "${version}" ]]; then
-            echo "Could not read version from hovalconnect/config.yaml" >&2
-            exit 1
-          fi
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -67,30 +86,18 @@ jobs:
           provenance: false
           sbom: false
           build-args: |
-            BUILD_VERSION=${{ steps.app_version.outputs.version }}
+            BUILD_VERSION=${{ needs.metadata.outputs.version }}
             BUILD_ARCH=${{ matrix.hass_arch }}
           tags: |
-            ${{ env.IMAGE }}:${{ steps.app_version.outputs.version }}-${{ matrix.hass_arch }}
+            ${{ env.IMAGE }}:${{ needs.metadata.outputs.version }}-${{ matrix.hass_arch }}
 
   manifest:
     name: Publish multi-arch tags
     runs-on: ubuntu-latest
-    needs: build
+    needs:
+      - metadata
+      - build
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Read app version
-        id: app_version
-        shell: bash
-        run: |
-          version="$(awk -F: '$1 == "version" { print $2; exit }' hovalconnect/config.yaml | tr -d ' "')"
-          if [[ -z "${version}" ]]; then
-            echo "Could not read version from hovalconnect/config.yaml" >&2
-            exit 1
-          fi
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -104,7 +111,7 @@ jobs:
       - name: Create manifests
         run: |
           docker buildx imagetools create \
-            -t "${IMAGE}:${{ steps.app_version.outputs.version }}" \
+            -t "${IMAGE}:${{ needs.metadata.outputs.version }}" \
             -t "${IMAGE}:latest" \
-            "${IMAGE}:${{ steps.app_version.outputs.version }}-amd64" \
-            "${IMAGE}:${{ steps.app_version.outputs.version }}-aarch64"
+            "${IMAGE}:${{ needs.metadata.outputs.version }}-amd64" \
+            "${IMAGE}:${{ needs.metadata.outputs.version }}-aarch64"
