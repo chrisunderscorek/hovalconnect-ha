@@ -23,6 +23,8 @@ API_BUSINESS_CIRCUIT_DETAIL = f"{API_BASE}/v2/business/plants/{{plant_id}}/circu
 API_BUSINESS_IS_ONLINE = f"{API_BASE}/business/plants/{{plant_id}}/is-online"
 API_BUSINESS_LATEST_PLANT_EVENT = f"{API_BASE}/business/plants/{{plant_id}}/plant-events/latest"
 API_WEATHER_FORECAST = f"{API_BASE}/v2/api/weather/forecast/{{plant_id}}"
+API_SUPPORT_GATEWAY_STATUS = f"{API_BASE}/support/plants/{{plant_id}}/gateway-status"
+API_GATEWAY_SOFTWARE_CURRENT = f"{API_BASE}/api/gateway-software/{{plant_id}}/versions/current"
 
 CONF_PLANT_ID = "plant_id"
 CONF_PLANT_NAME = "plant_name"

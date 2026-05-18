@@ -1,7 +1,7 @@
 """Hoval Connect Sensor entities."""
 from __future__ import annotations
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
-from homeassistant.const import UnitOfEnergy, UnitOfPower, UnitOfTemperature
+from homeassistant.const import EntityCategory, UnitOfEnergy, UnitOfPower, UnitOfTemperature
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from .devices import circuit_device_info, plant_device_info
@@ -22,6 +22,10 @@ API_TREE_BUSINESS_CIRCUIT_DETAIL = "GET /v2/business/plants/{plant_id}/circuits/
 API_TREE_BUSINESS_IS_ONLINE = "GET /business/plants/{plant_id}/is-online"
 API_TREE_BUSINESS_LATEST_PLANT_EVENT = "GET /business/plants/{plant_id}/plant-events/latest"
 API_TREE_WEATHER_FORECAST = "GET /v2/api/weather/forecast/{plant_id}"
+API_TREE_PLANT_SETTINGS = "GET /v1/plants/{plant_id}/settings"
+API_TREE_MY_PLANTS = "GET /api/my-plants"
+API_TREE_SUPPORT_GATEWAY_STATUS = "GET /support/plants/{plant_id}/gateway-status"
+API_TREE_GATEWAY_SOFTWARE_CURRENT = "GET /api/gateway-software/{plant_id}/versions/current"
 WFA_OPERATING_STATUS_SUFFIX = ".2053"
 CURRENT_ENERGY_OUTPUT_SUFFIX = ".29051"
 ENERGY_MWH_TO_KWH_KEYS = {"heatAmount", "totalEnergy"}
@@ -43,7 +47,9 @@ PLANT_SENSOR_KEYS = (
     "forecast_outside_temperature",
     "forecast_outside_temperature_min",
     "weather_forecast",
+    "gateway_data",
 )
+PLANT_DIAGNOSTIC_SENSOR_KEYS = {"plant_online", "gateway_data"}
 
 # Source: API_TREE_LIVE_VALUES.
 # These keys are returned as live-value rows for a specific circuitPath and
@@ -106,6 +112,30 @@ def _coerce_int(value):
     if not number.is_integer():
         return None
     return int(number)
+
+def _clean_attrs(attrs: dict) -> dict:
+    """Drop empty values from diagnostic attribute payloads."""
+    return {
+        key: value
+        for key, value in attrs.items()
+        if value is not None and value != {} and value != []
+    }
+
+def _feature_subset(feature_map: dict | None) -> dict:
+    if not isinstance(feature_map, dict):
+        return {}
+    gateway_features = {
+        "GSV",
+        "GSU",
+        "GSD",
+        "DM",
+        "PT",
+        "PVV",
+        "PVE",
+        "PAV",
+        "PNE",
+    }
+    return {key: value for key, value in feature_map.items() if key in gateway_features}
 
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
@@ -244,6 +274,10 @@ class HovalPlantSensor(CoordinatorEntity, SensorEntity):
         self._key = key
         self._attr_unique_id = f"hoval_{plant_id}_plant_{key}"
         apply_entity_name(self, entry, key)
+        if key in PLANT_DIAGNOSTIC_SENSOR_KEYS:
+            # Plant connectivity and gateway metadata are useful on the device
+            # page, but they are diagnostic context, not measured heating values.
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
         if key in ("forecast_outside_temperature", "forecast_outside_temperature_min"):
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
             self._attr_device_class = SensorDeviceClass.TEMPERATURE
@@ -268,6 +302,26 @@ class HovalPlantSensor(CoordinatorEntity, SensorEntity):
             if isinstance(item, dict):
                 return item
         return {}
+
+    def _plant_settings(self):
+        settings = self._plant_data().get("plant_settings")
+        return settings if isinstance(settings, dict) else {}
+
+    def _plant_setting(self):
+        plant_setting = self._plant_settings().get("plantSetting")
+        return plant_setting if isinstance(plant_setting, dict) else {}
+
+    def _my_plant(self):
+        plant = self._plant_data().get("my_plant")
+        return plant if isinstance(plant, dict) else {}
+
+    def _gateway_status(self):
+        status = self._plant_data().get("gateway_status")
+        return status if isinstance(status, dict) else {}
+
+    def _gateway_software_current(self):
+        value = self._plant_data().get("gateway_software_current")
+        return value if isinstance(value, str) and value.strip() else None
 
     @property
     def native_value(self):
@@ -298,6 +352,19 @@ class HovalPlantSensor(CoordinatorEntity, SensorEntity):
                 self._entry,
                 forecast.get("weatherType"),
                 self._hass_language,
+            )
+        if self._key == "gateway_data":
+            status = self._gateway_status()
+            if status.get("cloudAgentStatus"):
+                return status.get("cloudAgentStatus")
+            if status.get("reportedSoftwareVersion"):
+                return status.get("reportedSoftwareVersion")
+            if self._gateway_software_current():
+                return self._gateway_software_current()
+            return (
+                self._plant_setting().get("plantName")
+                or self._my_plant().get("description")
+                or self._plant_id
             )
         return None
 
@@ -355,6 +422,45 @@ class HovalPlantSensor(CoordinatorEntity, SensorEntity):
                 "outside_temperature_min": forecast.get("outsideTemperatureMin"),
                 "forecast": self._forecast()[:3],
             }
+        if self._key == "gateway_data":
+            settings = self._plant_settings()
+            plant_setting = self._plant_setting()
+            my_plant = self._my_plant()
+            gateway_status = self._gateway_status()
+            address = plant_setting.get("address") if isinstance(plant_setting.get("address"), dict) else {}
+            feature_map = settings.get("featureMap") if isinstance(settings.get("featureMap"), dict) else {}
+            attrs = {
+                "api_tree": [
+                    API_TREE_PLANT_SETTINGS,
+                    API_TREE_MY_PLANTS,
+                    API_TREE_SUPPORT_GATEWAY_STATUS,
+                    API_TREE_GATEWAY_SOFTWARE_CURRENT,
+                ],
+                "plant_external_id": (
+                    plant_setting.get("plantExternalId")
+                    or my_plant.get("plantExternalId")
+                    or self._plant_id
+                ),
+                "plant_name": plant_setting.get("plantName") or my_plant.get("description"),
+                "my_plants_description": my_plant.get("description"),
+                "online": self._plant_data().get("online"),
+                "my_plants_online": my_plant.get("isOnline"),
+                "onboarded": my_plant.get("isOnboarded"),
+                "contract_valid": my_plant.get("isContractValid"),
+                "is_plant_owner": settings.get("isPlantOwner"),
+                "publish_energy_consumption": plant_setting.get("publishEnergyConsumption"),
+                "address_country_code": address.get("countryCode"),
+                "reported_software_version": gateway_status.get("reportedSoftwareVersion"),
+                "desired_software_version": gateway_status.get("desiredSoftwareVersion"),
+                "current_software_version": self._gateway_software_current(),
+                "cloud_agent_status": gateway_status.get("cloudAgentStatus"),
+                "last_seen_online": gateway_status.get("lastSeenOnline"),
+                "modules": gateway_status.get("modules"),
+                "gateway_feature_map": _feature_subset(feature_map),
+                "feature_map": feature_map,
+                "privacy_note": "Address street, city, postal code and coordinates are intentionally not exposed as attributes.",
+            }
+            return _clean_attrs(attrs)
         return None
 
     @property

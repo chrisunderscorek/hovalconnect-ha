@@ -58,6 +58,7 @@ ENTITY_NAMES: dict[str, dict[str, str]] = {
         "forecast_outside_temperature": "Prognose Außentemp.",
         "forecast_outside_temperature_min": "Prognose Außentemp. min.",
         "weather_forecast": "Wetterprognose",
+        "gateway_data": "Gateway-Daten",
     },
     LANGUAGE_EN: {
         "hk_circuit_temp_actual": "Room temp. actual",
@@ -96,6 +97,7 @@ ENTITY_NAMES: dict[str, dict[str, str]] = {
         "forecast_outside_temperature": "Forecast outdoor temp.",
         "forecast_outside_temperature_min": "Forecast outdoor temp. min.",
         "weather_forecast": "Weather forecast",
+        "gateway_data": "Gateway data",
     },
 }
 

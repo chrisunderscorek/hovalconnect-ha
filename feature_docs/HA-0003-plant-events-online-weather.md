@@ -19,6 +19,7 @@ Hoval-Cloud für die Regelung prognostiziert.
 | `Prognose Außentemp.` | `Forecast outdoor temp.` | `outsideTemperature` | `GET /v2/api/weather/forecast/{plantExternalId}` |
 | `Prognose Außentemp. min.` | `Forecast outdoor temp. min.` | `outsideTemperatureMin` | `GET /v2/api/weather/forecast/{plantExternalId}` |
 | `Wetterprognose` | `Weather forecast` | `weatherType` | `GET /v2/api/weather/forecast/{plantExternalId}` |
+| `Gateway-Daten` | `Gateway data` | Metadaten als Attribute | `GET /v1/plants/{plantExternalId}/settings`, `GET /api/my-plants`, `GET /support/plants/{plantExternalId}/gateway-status`, `GET /api/gateway-software/{plantExternalId}/versions/current` |
 
 Alle Werte hängen am Parent-Device `Anlage`, nicht an den Circuit-Devices.
 
@@ -34,6 +35,25 @@ Alle Werte hängen am Parent-Device `Anlage`, nicht an den Circuit-Devices.
   `Prognose Außentemp.` und `Prognose Außentemp. min.`.
 - `weatherType` wird als `Wetterprognose` / `Weather forecast` angezeigt und
   lokalisiert Werte wie `sun`, `partialCloud`, `lightRain` usw.
+- `Gateway-Daten` ist bewusst eine Diagnose-Entität. Der Zustand ist nur ein
+  kompakter Hinweis, die eigentlichen Gateway-/Anlagenmetadaten werden als
+  Attribute abgelegt. Adresse, Ort, Postleitzahl und Koordinaten werden nicht
+  als Attribute veröffentlicht.
+
+## Entity-Kategorien
+
+Die lokal geprüfte Altinstallation nutzt `diagnostic` für technische
+Latest-Event-Detailwerte. `active_events`, Wetter und Forecast-Temperatur waren
+normale Entitäten.
+
+Für diese Integration gilt deshalb:
+
+- `Online` und `Gateway-Daten` sind `EntityCategory.DIAGNOSTIC`, weil sie
+  Verbindung und Gateway-Kontext beschreiben.
+- `Aktive Ereignisse` bleibt eine normale Anlagen-Entität, damit aktive
+  Meldungen nicht in Diagnose-Details verschwinden.
+- Wetterprognose und Forecast-Temperaturen bleiben normale Entitäten, weil sie
+  nutzbare Zustands-/Vorhersagewerte für Automationen und Dashboards sind.
 
 ## Weitere Auslesbare Bereiche
 
@@ -41,10 +61,12 @@ Im OpenAPI-Snapshot und in lokalen Probes sind weitere Endpunkte sichtbar, die
 wir bewusst noch nicht als Standard-Sensoren einbauen:
 
 - `GET /support/plants/{plantExternalId}/gateway-status`: Gateway-Status,
-  Softwarestände und `lastSeenOnline`. In der lokalen Probe kam kein verwertbarer
-  Body zurück, deshalb noch nicht aktiv genutzt.
+  Softwarestände und `lastSeenOnline`. Der Endpunkt wird als optionale
+  Diagnosequelle genutzt, kann aber je nach Benutzerrolle leer oder nicht
+  freigegeben sein.
 - `GET /api/gateway-software/{plantExternalId}/versions/current`: Gateway-
-  Softwareversion; die lokale Probe lieferte `null`.
+  Softwareversion. Der Wert ist langsam veränderlich und wird als Diagnose-
+  Attribut genutzt.
 - `GET /v2/api/energy-manager-pv-smart/available/{plantExternalId}` und
   `/live`: PV-Smart-/Smart-Grid-Werte. Bei der getesteten Anlage war
   `energyManagerPvSmartAvailable=false`.

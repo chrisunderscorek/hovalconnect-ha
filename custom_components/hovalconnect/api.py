@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import time
@@ -15,10 +16,12 @@ from .const import (
     API_BUSINESS_IS_ONLINE,
     API_BUSINESS_CIRCUIT_DETAIL,
     API_BUSINESS_LATEST_PLANT_EVENT,
+    API_GATEWAY_SOFTWARE_CURRENT,
     API_LIVE_VALUES,
     API_MY_PLANTS,
     API_PLANT_SETTINGS,
     API_SET_PROGRAM,
+    API_SUPPORT_GATEWAY_STATUS,
     API_TEMP_CHANGE,
     API_WEATHER_FORECAST,
     AUTH_TOKEN_URL,
@@ -155,6 +158,11 @@ class HovalConnectAPI:
         self._last_frontend_version_check_slot: int | None = None
         self._last_frontend_version_skip_warning_slot: int | None = None
         self._request_retry_window_seconds = REQUEST_RETRY_WINDOW_SECONDS
+        self._plant_settings_cache: dict[str, dict] = {}
+        self._plants_cache: list[dict] | None = None
+        self._plants_cache_expires: float = 0.0
+        self._gateway_status_cache: dict[str, tuple[float, dict]] = {}
+        self._gateway_software_cache: dict[str, tuple[float, str | None]] = {}
 
     def set_request_retry_window(self, seconds: float) -> None:
         """Set the transient request retry window, normally half the poll interval."""
@@ -342,6 +350,69 @@ class HovalConnectAPI:
                     resp.raise_for_status()
                     self._log_fetch_result(method, url, started, retries)
                     return
+            except (aiohttp.ClientError, TimeoutError, asyncio.TimeoutError) as err:
+                if not await self._maybe_sleep_for_transient_retry(
+                    method,
+                    url,
+                    err,
+                    started,
+                    retries,
+                ):
+                    self._log_fetch_failure(method, url, started, retries, err)
+                    raise
+                retries += 1
+
+    async def _request_text(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers_factory,
+        empty_statuses: set[int] | None = None,
+        **kwargs,
+    ) -> str | None:
+        retry_on_426 = True
+        started = time.monotonic()
+        retries = 0
+        request_kwargs = {**kwargs}
+        request_kwargs.setdefault(
+            "timeout",
+            aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS),
+        )
+        while True:
+            try:
+                async with self._session.request(
+                    method,
+                    url,
+                    headers=headers_factory(),
+                    **request_kwargs,
+                ) as resp:
+                    if empty_statuses and resp.status in empty_statuses:
+                        self._log_fetch_result(method, url, started, retries)
+                        return None
+                    if resp.status == 426 and retry_on_426:
+                        body = await resp.text()
+                        retry_on_426 = False
+                        if await self._handle_upgrade_required(body):
+                            continue
+                    if resp.status in RETRYABLE_HTTP_STATUS_CODES:
+                        body = await resp.text()
+                        raise aiohttp.ClientResponseError(
+                            resp.request_info,
+                            resp.history,
+                            status=resp.status,
+                            message=body[:200],
+                            headers=resp.headers,
+                        )
+                    resp.raise_for_status()
+                    text = await resp.text()
+                    self._log_fetch_result(method, url, started, retries)
+                    text = text.strip()
+                    if len(text) >= 2 and text[0] == '"' and text[-1] == '"':
+                        text = text[1:-1]
+                    if text.lower() == "null":
+                        return None
+                    return text or None
             except (aiohttp.ClientError, TimeoutError, asyncio.TimeoutError) as err:
                 if not await self._maybe_sleep_for_transient_retry(
                     method,
@@ -570,6 +641,8 @@ class HovalConnectAPI:
             API_PLANT_SETTINGS.format(plant_id=plant_id),
             headers_factory=self._auth_headers,
         )
+        if isinstance(data, dict):
+            self._plant_settings_cache[str(plant_id)] = data
         self._plant_token = data["token"]
         self._plant_token_expires = time.monotonic() + 800
         return self._plant_token
@@ -585,6 +658,25 @@ class HovalConnectAPI:
             API_MY_PLANTS,
             headers_factory=self._auth_headers,
         )
+
+    async def get_selected_plant_info(self, plant_id: str) -> dict:
+        """Return cached metadata for the selected plant from /api/my-plants."""
+        now = time.monotonic()
+        if self._plants_cache is None or now >= self._plants_cache_expires:
+            plants = await self.get_plants()
+            self._plants_cache = plants if isinstance(plants, list) else []
+            self._plants_cache_expires = now + 10 * 60
+
+        for plant in self._plants_cache:
+            if str(plant.get("plantExternalId")) == str(plant_id):
+                return plant
+        return {}
+
+    async def get_plant_settings(self, plant_id: str) -> dict:
+        """Return plant settings cached while obtaining the plant access token."""
+        await self._ensure_plant_token(plant_id)
+        settings = self._plant_settings_cache.get(str(plant_id))
+        return settings if isinstance(settings, dict) else {}
 
     async def get_circuits(self, plant_id: str) -> list[dict]:
         async def _get_once() -> list[dict]:
@@ -663,6 +755,49 @@ class HovalConnectAPI:
             empty_statuses={404},
         )
         return data if isinstance(data, list) else []
+
+    async def get_gateway_status(self, plant_id: str) -> dict:
+        """Read support gateway status if the logged-in account may access it."""
+        now = time.monotonic()
+        cached = self._gateway_status_cache.get(str(plant_id))
+        if cached and now < cached[0]:
+            return cached[1]
+
+        await self._ensure_access_token()
+        text = await self._request_text(
+            "GET",
+            API_SUPPORT_GATEWAY_STATUS.format(plant_id=plant_id),
+            headers_factory=self._auth_headers,
+            empty_statuses={204, 403, 404, 417},
+        )
+        if not text:
+            status = {}
+            self._gateway_status_cache[str(plant_id)] = (now + 10 * 60, status)
+            return status
+        try:
+            data = json.loads(text)
+        except ValueError:
+            data = {}
+        status = data if isinstance(data, dict) else {}
+        self._gateway_status_cache[str(plant_id)] = (now + 10 * 60, status)
+        return status
+
+    async def get_gateway_software_current(self, plant_id: str) -> str | None:
+        """Read the current gateway software version as reported by Hoval."""
+        now = time.monotonic()
+        cached = self._gateway_software_cache.get(str(plant_id))
+        if cached and now < cached[0]:
+            return cached[1]
+
+        plant_token = await self._ensure_plant_token(plant_id)
+        version = await self._request_text(
+            "GET",
+            API_GATEWAY_SOFTWARE_CURRENT.format(plant_id=plant_id),
+            headers_factory=lambda: self._plant_headers(plant_token),
+            empty_statuses={204, 403, 404, 417},
+        )
+        self._gateway_software_cache[str(plant_id)] = (now + 6 * 60 * 60, version)
+        return version
 
     async def set_temporary_change(self, plant_id: str, path: str, value: float, duration: str = "fourHours") -> None:
         """Temporary temperature change (weekly program continues)."""

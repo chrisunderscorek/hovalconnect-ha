@@ -6,6 +6,8 @@
 
 - Add plant-level sensors for online state, active events, forecast outdoor
   temperature, forecast minimum outdoor temperature, and weather forecast.
+- Add gateway diagnostic metadata on the plant device and mark connectivity /
+  gateway metadata as Home Assistant diagnostic entities.
 - Cache the last successful plant-level values during short endpoint failures
   and expose fetch errors in coordinator diagnostics.
 

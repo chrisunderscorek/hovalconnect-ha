@@ -276,6 +276,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 _fetch_plant_value("online", lambda: api.get_plant_online(plant_id)),
                 _fetch_plant_value("latest_event", lambda: api.get_latest_plant_event(plant_id)),
                 _fetch_plant_value("weather_forecast", lambda: api.get_weather_forecast(plant_id)),
+                _fetch_plant_value("plant_settings", lambda: api.get_plant_settings(plant_id)),
+                _fetch_plant_value("my_plant", lambda: api.get_selected_plant_info(plant_id)),
+                _fetch_plant_value("gateway_status", lambda: api.get_gateway_status(plant_id)),
+                _fetch_plant_value(
+                    "gateway_software_current",
+                    lambda: api.get_gateway_software_current(plant_id),
+                ),
             )
 
             results = await circuit_results_task

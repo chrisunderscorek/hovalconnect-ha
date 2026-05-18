@@ -43,7 +43,8 @@ language. The language setting only affects this integration.
 - 30 second cloud polling interval.
 - Home Assistant device grouping by plant, heat pump, heating circuit, and hot
   water.
-- Plant-level online, active-event, and weather forecast values.
+- Plant-level online, active-event, weather forecast, and gateway diagnostic
+  values.
 - German and English names for entities, program values, circuit status values,
   and WFA-200 operating status values.
 - Active week/day program names from the API instead of raw keys like `week1`.
@@ -87,6 +88,7 @@ Exact entities depend on what the Hoval cloud returns for your plant.
 - Forecast outdoor temperature / `Prognose Außentemp.`
 - Forecast outdoor temperature min. / `Prognose Außentemp. min.`
 - Weather forecast / `Wetterprognose`
+- Gateway data / `Gateway-Daten` (diagnostic entity with metadata attributes)
 
 ### Heat Pump / Heat Generator
 

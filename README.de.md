@@ -48,7 +48,8 @@ nur diese Integration.
 - Cloud-Abfrageintervall von 30 Sekunden.
 - Home-Assistant-Gerätegruppierung nach Anlage, Wärmepumpe, Heizkreis und
   Warmwasser.
-- Anlagenwerte für Online-Status, aktive Ereignisse und Wetterprognose.
+- Anlagenwerte für Online-Status, aktive Ereignisse, Wetterprognose und
+  Gateway-Diagnosedaten.
 - Deutsche und englische Namen für Entitäten, Programmwerte,
   Kreis-Statuswerte und WFA-200-Betriebsstatuswerte.
 - Aktive Wochen-/Tagesprogrammnamen aus der API statt Rohwerten wie `week1`.
@@ -94,6 +95,7 @@ liefert.
 - Forecast outdoor temperature / `Prognose Außentemp.`
 - Forecast outdoor temperature min. / `Prognose Außentemp. min.`
 - Weather forecast / `Wetterprognose`
+- Gateway data / `Gateway-Daten` (Diagnose-Entität mit Metadaten-Attributen)
 
 ### Wärmepumpe / Wärmeerzeuger
 

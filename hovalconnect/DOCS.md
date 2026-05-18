@@ -45,7 +45,7 @@ Energy counters for heat output and inverter energy use are exposed as Home Assi
 
 The WFA-200 operating status sensor uses the WFA-200 status table, for example `0` becomes `WP aus` in German and `Heat pump off` in English. If the live-values response does not include `faStatus`, the integration falls back to the read-only business circuit detail datapoint `*.2053`.
 
-Plant-level values are attached to the plant device: `Online`, `Aktive Ereignisse` / `Active events`, `Prognose Außentemp.` / `Forecast outdoor temp.`, `Prognose Außentemp. min.` / `Forecast outdoor temp. min.`, and `Wetterprognose` / `Weather forecast`. These come from the Hoval business and weather endpoints, not from the circuit live-values tree.
+Plant-level values are attached to the plant device: `Online`, `Aktive Ereignisse` / `Active events`, `Prognose Außentemp.` / `Forecast outdoor temp.`, `Prognose Außentemp. min.` / `Forecast outdoor temp. min.`, `Wetterprognose` / `Weather forecast`, and `Gateway-Daten` / `Gateway data`. The gateway entry is a diagnostic entity with metadata attributes; address details and coordinates are intentionally not exposed.
 
 ## Screenshots
 

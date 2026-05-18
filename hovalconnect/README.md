@@ -33,6 +33,7 @@ output and inverter energy use as `kWh` energy sensors, exposes `Aktuelle
 Leistung Heizen` / `Current output heating` as a `kW` power sensor, exposes the
 cumulative heat/electrical energy ratio as a total performance factor, maps
 WFA-200 operating status codes to readable German/English status names, and
-shows plant-level online, active-event, and weather forecast values.
+shows plant-level online, active-event, weather forecast, and gateway diagnostic
+values.
 
 License: GPL-3.0-only starting with version 1.0.0.
