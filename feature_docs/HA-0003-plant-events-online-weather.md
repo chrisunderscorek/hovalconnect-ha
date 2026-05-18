@@ -1,6 +1,6 @@
 # HA-0003 Plant Events, Online State and Weather
 
-Status: implemented locally
+Status: released in 1.1.1
 
 ## User Story
 
