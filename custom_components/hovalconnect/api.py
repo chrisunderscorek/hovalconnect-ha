@@ -43,8 +43,18 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# Hoval's Azure Application Gateway started blocking the old
+# "HovalConnect/... CFNetwork/..." user agent in November 2026, even with a
+# valid token and current frontend app version. Keep the explicit frontend
+# version header for Hoval's app-version gate, but use a generic mobile user
+# agent for the HTTP transport fingerprint.
+API_USER_AGENT = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+)
+
 BASE_APP_HEADERS = {
-    "User-Agent": "HovalConnect/6022 CFNetwork/3860.400.51 Darwin/25.3.0",
+    "User-Agent": API_USER_AGENT,
     "Accept": "application/json",
     "x-requested-with": "XMLHttpRequest",
 }

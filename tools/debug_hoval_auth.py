@@ -24,7 +24,10 @@ API_BASE_URL = "https://azure-iot-prod.hoval.com/core"
 CLIENT_ID = "991b54b2-7e67-47ef-81fe-572e21c59899"
 DEFAULT_SCOPE = "openid offline_access"
 DEFAULT_FRONTEND_APP_VERSION = "3.2.0"
-DEFAULT_USER_AGENT = "HovalConnect/6022 CFNetwork/3860.400.51 Darwin/25.3.0"
+DEFAULT_USER_AGENT = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+)
 GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=com.hoval.connect2&hl=en_US&gl=US"
 APPLE_APP_STORE_URL = "https://apps.apple.com/pl/app/hovalconnect/id1594860714"
 APPLE_LOOKUP_URL = "https://itunes.apple.com/lookup?id=1594860714&country=pl"

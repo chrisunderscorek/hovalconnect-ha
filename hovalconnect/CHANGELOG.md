@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.2] - 2026-11-24
+
+### API
+
+- Replace the old `HovalConnect/... CFNetwork/...` HTTP user agent. Hoval's
+  Azure Application Gateway started returning `403 Forbidden` before the
+  request reached the API even with a valid token and frontend app version
+  `3.5.0`.
+- Align the local debug auth tool with the new API user agent.
+
 ## [1.1.1] - 2026-05-18
 
 ### Plant
